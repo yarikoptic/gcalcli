@@ -47,11 +47,16 @@ __author__  = 'Insanum'
 
 import inspect
 
-import sys, os, re, urllib, getopt, shlex
+import sys, os, re, urllib, getopt, shlex, codecs, locale
 from gdata.calendar.service import *
 from datetime import *
 from dateutil.tz import *
 from dateutil.parser import *
+
+
+# for unicode support
+sys.stdout = codecs.getwriter(locale.getpreferredencoding())(sys.stdout);
+sys.stdin = codecs.getreader(locale.getpreferredencoding())(sys.stdin);
 
 
 def Usage():
