@@ -26,6 +26,13 @@
 #
 # Home: http://code.google.com/p/gcalcli
 #
+# Author: Eric Davis <insanum@gmail.com> <http://www.insanum.com>
+#
+# Requirements:
+#  - Python - http://www.python.org
+#  - Google's GData Python module - http://code.google.com/p/gdata-python-client
+#  - dateutil Python module - http://www.labix.org/python-dateutil
+#
 # TODO:
 #  - import meeting.ics Outlook events ("gcalcli import <file|stdin>")
 #  - calendar selection (perform operation against a single calendar)
@@ -35,7 +42,6 @@
 #  - more agenda output formats
 #  - cache calendar information (serialize calendar info to file)
 #  - rc file support for default colors, login info, etc
-#  - locales
 #
 
 __username__ = '<username>@gmail.com'
