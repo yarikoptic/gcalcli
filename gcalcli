@@ -562,7 +562,9 @@ def DoooooItHippieMonster():
         if (len(args) != 2):
             PrintErrMsg('\nError: invalid search string\n')
             Usage()
-        GoogleCalendar(usr, pwd, access, details).TextQuery(args[1])
+        # allow unicode strings for input
+        uniArg = unicode(args[1], locale.getpreferredencoding())
+        GoogleCalendar(usr, pwd, access, details).TextQuery(uniArg)
 
     elif (args[0] == 'agenda'):
         if (len(args) == 3):   # start and end
@@ -580,13 +582,15 @@ def DoooooItHippieMonster():
         if (len(args) != 2):
             PrintErrMsg('\nError: invalid event text\n')
             Usage()
-        GoogleCalendar(usr, pwd, access, details).QuickAdd(args[1])
+        # allow unicode strings for input
+        uniArg = unicode(args[1], locale.getpreferredencoding())
+        GoogleCalendar(usr, pwd, access, details).QuickAdd(uniArg)
         return
 
     elif (args[0] == 'remind'):
         if (len(args) == 3):   # minutes and command
             GoogleCalendar(usr, pwd, access, details).Remind(int(args[1]),
-                                                                 args[2])
+                                                             args[2])
         elif (len(args) == 2): # minutes
             GoogleCalendar(usr, pwd, access, details).Remind(int(args[1]))
         elif (len(args) == 1): # defaults
