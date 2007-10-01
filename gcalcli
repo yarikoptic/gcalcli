@@ -24,6 +24,8 @@
 
 
 #
+# Home: http://code.google.com/p/gcalcli
+#
 # TODO:
 #  - import meeting.ics Outlook events ("gcalcli import <file|stdin>")
 #  - calendar selection (perform operation against a single calendar)
