@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# $Id$
+
 # ** The MIT License **
 #
 # Copyright (c) 2007 Eric Davis (aka Insanum)
@@ -48,7 +50,7 @@ __username__ = '<username>@gmail.com'
 __password__ = '<password>'
 
 __program__ = 'gcalcli'
-__version__ = 'v1.1'
+__version__ = 'v1.2'
 __author__  = 'Insanum'
 
 import inspect
