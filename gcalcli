@@ -253,9 +253,9 @@ class GoogleCalendar:
             return True
 
         elif ((self.access == self.ACCESS_DEFAULT) and
-              (cal.gcalcli_username != self.username)):
+              (cal.gcalcli_username == self.username)):
 
-            return False
+            return True
 
         elif (self.access != cal.access_level.value):
 
