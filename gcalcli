@@ -33,6 +33,7 @@
 # Requirements:
 #  - Python - http://www.python.org
 #  - Google's GData Python module - http://code.google.com/p/gdata-python-client
+#  - ElementTree Python module - http://effbot.org/zone/element-index.htm
 #  - dateutil Python module - http://www.labix.org/python-dateutil
 #
 # TODO:
