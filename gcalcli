@@ -288,7 +288,7 @@ class GoogleCalendar:
         eventList.sort(lambda x, y:
                        cmp(x.when[0].start_time, y.when[0].start_time))
 
-        timeFormat = '%l:%M%P'
+        timeFormat = '%l:%M%p'
         dayFormat = '\n%a %b %d' # 10 chars for day
         indent = '          ' # 10 spaces
         detailsIndent = '                   '    # 19 spaces
@@ -513,7 +513,7 @@ class GoogleCalendar:
             if (tmpDayTime < self.now):
                 continue
 
-            tmpTimeStr = tmpDayTime.strftime('%l:%M%P')
+            tmpTimeStr = tmpDayTime.strftime('%l:%M%p')
             message += '%s  %s\n' % (tmpTimeStr, event.title.text)
 
         if (message == ''):
