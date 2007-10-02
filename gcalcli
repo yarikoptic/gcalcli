@@ -288,7 +288,7 @@ class GoogleCalendar:
         eventList.sort(lambda x, y:
                        cmp(x.when[0].start_time, y.when[0].start_time))
 
-        timeFormat = '%l:%M%p'
+        timeFormat = '%l:%M'
         dayFormat = '\n%a %b %d' # 10 chars for day
         indent = '          ' # 10 spaces
         detailsIndent = '                   '    # 19 spaces
@@ -298,7 +298,8 @@ class GoogleCalendar:
             startDayTime = parse(event.when[0].start_time,
                                  default=defaultDatetime).astimezone(tzlocal())
             tmpDayStr  = startDayTime.strftime(dayFormat)
-            tmpTimeStr = startDayTime.strftime(timeFormat)
+            meridiem = startDayTime.strftime('%p').lower()
+            tmpTimeStr = startDayTime.strftime(timeFormat) + meridiem
             prefix = indent
             if (tmpDayStr != day): day = prefix = tmpDayStr
             PrintMsg(CLR_GRN(), prefix)
@@ -513,7 +514,8 @@ class GoogleCalendar:
             if (tmpDayTime < self.now):
                 continue
 
-            tmpTimeStr = tmpDayTime.strftime('%l:%M%p')
+            meridiem = tmpDayTime.strftime('%p').lower()
+            tmpTimeStr = tmpDayTime.strftime('%l:%M') + meridiem
             message += '%s  %s\n' % (tmpTimeStr, event.title.text)
 
         if (message == ''):
