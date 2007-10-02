@@ -198,15 +198,17 @@ class GoogleCalendar:
     ACCESS_FREEBUSY = 'freebusy'
     ACCESS_CONTRIB  = 'contributor'
     ACCESS_OWNER    = 'owner'
+    ACCESS_EDITOR   = 'editor'
 
 
     def _CalendarAccessCmp(self, x, y):
 
         order = { self.ACCESS_OWNER:1,
-                  self.ACCESS_CONTRIB:2,
-                  self.ACCESS_READ:3,
-                  self.ACCESS_FREEBUSY:4,
-                  self.ACCESS_NONE:5 }
+                  self.ACCESS_EDITOR:2,
+                  self.ACCESS_CONTRIB:3,
+                  self.ACCESS_READ:4,
+                  self.ACCESS_FREEBUSY:5,
+                  self.ACCESS_NONE:6 }
 
         return cmp(order[x.access_level.value], order[y.access_level.value])
 
