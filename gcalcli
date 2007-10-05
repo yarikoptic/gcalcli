@@ -64,8 +64,8 @@ from dateutil.parser import *
 
 
 # for unicode support
-sys.stdout = codecs.getwriter(locale.getpreferredencoding())(sys.stdout);
-sys.stdin = codecs.getreader(locale.getpreferredencoding())(sys.stdin);
+sys.stdout = codecs.getwriter(locale.getpreferredencoding())(sys.stdout)
+sys.stdin = codecs.getreader(locale.getpreferredencoding())(sys.stdin)
 
 
 def Usage():
@@ -91,6 +91,14 @@ gcalcli [options] command [command args]
 
   --details                 show all event details (i.e. length, location,
                             reminders, contents)
+
+  --ignore-started          ignore old or already started events
+                            - when used with the 'agenda' command, ignore events
+                              that have already started and are in-progress with
+                              respect to the specified [start] time
+                            - when used with the 'search' command, ignore events
+                              that have already occurred and only show future
+                              events
 
   --nc                      don't use color sequences
 
@@ -180,16 +188,17 @@ def PrintMsg(color, msg):
 
 class GoogleCalendar:
 
-    gcal         = None
-    cals         = None
-    now          = datetime.now(tzlocal())
-    feedPrefix   = 'http://www.google.com/calendar/feeds/'
-    agendaLength = 5
-    username     = ''
-    password     = ''
-    access       = ''
-    details      = False
-    command      = 'gxmessage -display :0 -center -title "Ding, Ding, Ding!" %s'
+    gcal          = None
+    cals          = None
+    now           = datetime.now(tzlocal())
+    feedPrefix    = 'http://www.google.com/calendar/feeds/'
+    agendaLength  = 5
+    username      = ''
+    password      = ''
+    access        = ''
+    details       = False
+    ignoreStarted = False
+    command       = 'gxmessage -display :0 -center -title "Ding, Ding, Ding!" %s'
 
     ACCESS_ALL      = 'all'      # non-google access level
     ACCESS_DEFAULT  = 'default'  # non-google access level
@@ -213,13 +222,14 @@ class GoogleCalendar:
         return cmp(order[x.access_level.value], order[y.access_level.value])
 
 
-    def __init__(self, username, password, access, details):
+    def __init__(self, username, password, access, details, ignoreStarted):
 
-        self.gcal     = CalendarService()
-        self.username = username
-        self.password = password
-        self.access   = access
-        self.details  = details
+        self.gcal          = CalendarService()
+        self.username      = username
+        self.password      = password
+        self.access        = access
+        self.details       = details
+        self.ignoreStarted = ignoreStarted
 
         # authenticate and login to google calendar
         try:
@@ -279,7 +289,7 @@ class GoogleCalendar:
         return clr
 
 
-    def _PrintEvents(self, defaultDatetime, eventList):
+    def _PrintEvents(self, defaultDateTime, startDateTime, eventList):
 
         if (len(eventList) == 0):
             PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
@@ -295,11 +305,16 @@ class GoogleCalendar:
         day = ''
 
         for event in eventList:
-            startDayTime = parse(event.when[0].start_time,
-                                 default=defaultDatetime).astimezone(tzlocal())
-            tmpDayStr  = startDayTime.strftime(dayFormat)
-            meridiem = startDayTime.strftime('%p').lower()
-            tmpTimeStr = startDayTime.strftime(timeFormat) + meridiem
+            eventStartDateTime = \
+                parse(event.when[0].start_time,
+                      default=defaultDateTime).astimezone(tzlocal())
+
+            if (self.ignoreStarted and (eventStartDateTime < startDateTime)):
+                continue
+
+            tmpDayStr  = eventStartDateTime.strftime(dayFormat)
+            meridiem = eventStartDateTime.strftime('%p').lower()
+            tmpTimeStr = eventStartDateTime.strftime(timeFormat) + meridiem
             prefix = indent
             if (tmpDayStr != day): day = prefix = tmpDayStr
             PrintMsg(CLR_GRN(), prefix)
@@ -316,10 +331,10 @@ class GoogleCalendar:
                     PrintMsg(clr, str)
 
                 if event.when[0].end_time:
-                    endDayTime = parse(event.when[0].end_time,
-                                  default=defaultDatetime).astimezone(tzlocal())
-                    diffDayTime = (endDayTime - startDayTime)
-                    str = "%s  Length: %s\n" % (detailsIndent, diffDayTime)
+                    eventEndDateTime = parse(event.when[0].end_time,
+                                  default=defaultDateTime).astimezone(tzlocal())
+                    diffDateTime = (eventEndDateTime - eventStartDateTime)
+                    str = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
                     PrintMsg(clr, str)
 
                 # XXX Why does accessing event.when[0].reminder[0] fail?
@@ -413,7 +428,7 @@ class GoogleCalendar:
 
             eventList.extend(self._GetAllEvents(cal, feed))
 
-        self._PrintEvents(self.now, eventList)
+        self._PrintEvents(self.now, self.now, eventList)
 
 
     def DateQuery(self, startText='', endText=''):
@@ -465,7 +480,7 @@ class GoogleCalendar:
 
             eventList.extend(self._GetAllEvents(cal, feed))
 
-        self._PrintEvents(today, eventList)
+        self._PrintEvents(today, start, eventList)
 
 
     def QuickAdd(self, eventText):
@@ -507,16 +522,16 @@ class GoogleCalendar:
 
         for event in eventList:
             today = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
-            tmpDayTime = parse(event.when[0].start_time,
-                               default=today).astimezone(tzlocal())
+            eventStartDateTime = parse(event.when[0].start_time,
+                                       default=today).astimezone(tzlocal())
 
             # skip this event if it already started
             # XXX maybe add a 2+ minute grace period here...
-            if (tmpDayTime < self.now):
+            if (eventStartDateTime < self.now):
                 continue
 
-            meridiem = tmpDayTime.strftime('%p').lower()
-            tmpTimeStr = tmpDayTime.strftime('%l:%M') + meridiem
+            meridiem = eventStartDateTime.strftime('%p').lower()
+            tmpTimeStr = eventStartDateTime.strftime('%l:%M') + meridiem
             message += '%s  %s\n' % (tmpTimeStr, event.title.text)
 
         if (message == ''):
@@ -542,15 +557,17 @@ def DoooooItHippieMonster():
                                    ["user=",
                                     "pw=",
                                     "cals=",
+                                    "ignore-started",
                                     "details",
                                     "nc"])
     except getopt.error, msg:
         Usage()
 
-    usr     = __username__
-    pwd     = __password__
-    details = False
-    access  = 'all'
+    usr           = __username__
+    pwd           = __password__
+    details       = False
+    ignoreStarted = False
+    access        = 'all'
 
     # Process options
     for opt, arg in opts:
@@ -559,6 +576,7 @@ def DoooooItHippieMonster():
         elif (opt == "--pw"): pwd = arg
         elif (opt == "--cals"): access = arg
         elif (opt == "--details"): details = True
+        elif (opt == "--ignore-started"): ignoreStarted = True
         elif (opt == "--nc"): CLR.useColor = False
 
     if ((usr == '') or (pwd == '')):
@@ -570,7 +588,8 @@ def DoooooItHippieMonster():
         Usage()
 
     if (args[0] == 'list'):
-        GoogleCalendar(usr, pwd, access, details).ListAllCalendars()
+        GoogleCalendar(usr, pwd, access, details,
+                       ignoreStarted).ListAllCalendars()
 
     elif (args[0] == 'search'):
         if (len(args) != 2):
@@ -578,16 +597,19 @@ def DoooooItHippieMonster():
             Usage()
         # allow unicode strings for input
         uniArg = unicode(args[1], locale.getpreferredencoding())
-        GoogleCalendar(usr, pwd, access, details).TextQuery(uniArg)
+        GoogleCalendar(usr, pwd, access,
+                       details, ignoreStarted).TextQuery(uniArg)
 
     elif (args[0] == 'agenda'):
         if (len(args) == 3):   # start and end
-            GoogleCalendar(usr, pwd, access, details).DateQuery(args[1],
-                                                                args[2])
+            GoogleCalendar(usr, pwd, access,
+                           details, ignoreStarted).DateQuery(args[1], args[2])
         elif (len(args) == 2): # start
-            GoogleCalendar(usr, pwd, access, details).DateQuery(args[1])
+            GoogleCalendar(usr, pwd, access,
+                           details, ignoreStarted).DateQuery(args[1])
         elif (len(args) == 1): # defaults
-            GoogleCalendar(usr, pwd, access, details).DateQuery()
+            GoogleCalendar(usr, pwd, access,
+                           details, ignoreStarted).DateQuery()
         else:
             PrintErrMsg('\nError: invalid agenda arguments\n')
             Usage()
@@ -598,17 +620,20 @@ def DoooooItHippieMonster():
             Usage()
         # allow unicode strings for input
         uniArg = unicode(args[1], locale.getpreferredencoding())
-        GoogleCalendar(usr, pwd, access, details).QuickAdd(uniArg)
+        GoogleCalendar(usr, pwd, access,
+                       details, ignoreStarted).QuickAdd(uniArg)
         return
 
     elif (args[0] == 'remind'):
         if (len(args) == 3):   # minutes and command
-            GoogleCalendar(usr, pwd, access, details).Remind(int(args[1]),
-                                                             args[2])
+            GoogleCalendar(usr, pwd, access,
+                           details, ignoreStarted).Remind(int(args[1]), args[2])
         elif (len(args) == 2): # minutes
-            GoogleCalendar(usr, pwd, access, details).Remind(int(args[1]))
+            GoogleCalendar(usr, pwd, access,
+                           details, ignoreStarted).Remind(int(args[1]))
         elif (len(args) == 1): # defaults
-            GoogleCalendar(usr, pwd, access, details).Remind()
+            GoogleCalendar(usr, pwd, access,
+                           details, ignoreStarted).Remind()
         else:
             PrintErrMsg('\nError: invalid remind arguments\n')
             Usage()
