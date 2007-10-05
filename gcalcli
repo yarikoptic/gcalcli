@@ -421,13 +421,13 @@ class GoogleCalendar:
         PrintMsg(CLR_BRYLW(), "\nCurrent Time: %s\n" % (self.now.ctime()))
 
         # convert now to midnight this morning and use for default
-        now = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
 
         if (startText == ''):
-            start = now
+            start = today
         else:
             try:
-                start = parse(startText, default=now)
+                start = parse(startText, default=today)
             except:
                 PrintErrMsg('\nError: failed to parse start time\n')
                 return
@@ -436,7 +436,7 @@ class GoogleCalendar:
             end = (start + timedelta(days=self.agendaLength))
         else:
             try:
-                end = parse(endText, default=now)
+                end = parse(endText, default=today)
             except:
                 PrintErrMsg('\nError: failed to parse end time\n')
                 return
@@ -465,7 +465,7 @@ class GoogleCalendar:
 
             eventList.extend(self._GetAllEvents(cal, feed))
 
-        self._PrintEvents(now, eventList)
+        self._PrintEvents(today, eventList)
 
 
     def QuickAdd(self, eventText):
@@ -506,8 +506,9 @@ class GoogleCalendar:
         message = ''
 
         for event in eventList:
+            today = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
             tmpDayTime = parse(event.when[0].start_time,
-                               default=self.now).astimezone(tzlocal())
+                               default=today).astimezone(tzlocal())
 
             # skip this event if it already started
             # XXX maybe add a 2+ minute grace period here...
