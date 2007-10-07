@@ -848,7 +848,8 @@ def DoooooItHippieMonster():
     details       = TrueFalse(GetConfig(config, 'details', 'false'))
     ignoreStarted = TrueFalse(GetConfig(config, 'ignore-started', 'false'))
     calWidth      = int(GetConfig(config, 'width', '10'))
-    calMonday     = TrueFalse(GetConfig(config, 'mon', 'false'))
+    #calMonday     = TrueFalse(GetConfig(config, 'mon', 'false'))
+    calMonday     = False
 
     # Process options
     for opt, arg in opts:
