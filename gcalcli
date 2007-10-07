@@ -42,7 +42,6 @@
 #  - add (non-quick) events with ability to set reminders, repeat, guests, etc
 #  - configurable 'remind' reminders (i.e. 30 mins before event every 5 mins)
 #  - daemon mode for 'remind' reminders (working from cached data)
-#  - more agenda output formats
 #  - cache calendar information (serialize calendar info to file)
 #  - rc file support for default colors, login info, etc
 #
@@ -51,7 +50,7 @@ __username__ = '<username>@gmail.com'
 __password__ = '<password>'
 
 __program__ = 'gcalcli'
-__version__ = 'v1.2'
+__version__ = 'v1.3'
 __author__  = 'Insanum'
 
 import inspect
@@ -85,6 +84,7 @@ gcalcli [options] command [command args]
   --cals=[all,              calendars to work with (default is all calendars)
           default,          - default (your default main calendar)
           owner,            - owner (your owned calendars)
+          editor,           - editor (editable calendar)
           read,             - read (read only calendars)
           freebusy,         - freebusy (only free/busy info visible)
           contributor]      - contributor (non-owner but able to edit)
@@ -99,6 +99,9 @@ gcalcli [options] command [command args]
                             - when used with the 'search' command, ignore events
                               that have already occurred and only show future
                               events
+
+  --width                   the number of characters to use for each column in
+                            the 'cal' command output (default is 10)
 
   --nc                      don't use color sequences
 
@@ -119,6 +122,10 @@ gcalcli [options] command [command args]
                                '2007-09-24T15:30-8:00'
                                '20070924T15'
                                '8am'
+
+  cal <weeks> [start]       get an agenda in a nice calendar format
+                            - weeks is the number of weeks to display
+                            - start time default is beginning of this week
 
   quick <text>              quick add an event to default calendar
                             - example:
@@ -186,6 +193,13 @@ def PrintMsg(color, msg):
         sys.stdout.write(msg)
 
 
+def DebugPrint(msg):
+    return
+    sys.stdout.write(str(CLR_YLW()))
+    sys.stdout.write(msg)
+    sys.stdout.write(str(CLR_NRM()))
+
+
 class GoogleCalendar:
 
     gcal          = None
@@ -198,6 +212,8 @@ class GoogleCalendar:
     access        = ''
     details       = False
     ignoreStarted = False
+    calWidth      = 10
+    calMonday     = False
     command       = 'gxmessage -display :0 -center -title "Ding, Ding, Ding!" %s'
 
     ACCESS_ALL      = 'all'      # non-google access level
@@ -222,7 +238,9 @@ class GoogleCalendar:
         return cmp(order[x.access_level.value], order[y.access_level.value])
 
 
-    def __init__(self, username, password, access, details, ignoreStarted):
+    def __init__(self, username='', password='', access='all',
+                 details=False, ignoreStarted=False, calWidth=10,
+                 calMonday=False):
 
         self.gcal          = CalendarService()
         self.username      = username
@@ -230,6 +248,8 @@ class GoogleCalendar:
         self.access        = access
         self.details       = details
         self.ignoreStarted = ignoreStarted
+        self.calWidth      = calWidth
+        self.calMonday     = calMonday
 
         # authenticate and login to google calendar
         try:
@@ -289,6 +309,199 @@ class GoogleCalendar:
         return clr
 
 
+    def _GetWeekEventStrings(self, startDateTime, endDateTime, eventList):
+
+        weekEventStrings = [ '', '', '', '', '', '', '' ]
+
+        for event in eventList:
+
+            eventStartDateTime = \
+                parse(event.when[0].start_time,
+                      default=startDateTime).astimezone(tzlocal())
+
+            dayNum = int(eventStartDateTime.strftime("%w"))
+
+            if ((eventStartDateTime >= startDateTime) and
+                (eventStartDateTime <= endDateTime)):
+
+                meridiem = eventStartDateTime.strftime('%p').lower()
+                tmpTimeStr = eventStartDateTime.strftime("%l:%M") + meridiem
+                weekEventStrings[dayNum] += \
+                    "\n" + tmpTimeStr.strip() + " " + event.title.text.strip()
+
+        return weekEventStrings
+
+
+    def _GetCutIndex(self, eventString, idx):
+
+        cut1 = eventString.find('\n')
+        cut2 = eventString.find(' ')
+
+        DebugPrint("-- %s\n" % (eventString))
+
+        if ((idx + len(eventString)) <= self.calWidth):
+            DebugPrint("--- %d (end of string)\n" % (idx + len(eventString)))
+            return (idx + len(eventString))
+
+        if (cut1 < 0):
+            if ((cut2 < 0) or (cut2 >= self.calWidth)):
+                cut = self.calWidth
+            else:
+                cut = cut2
+        elif (cut2 < 0):
+            if ((cut1 < 0) or (cut1 >= self.calWidth)):
+                cut = self.calWidth
+            else:
+                cut = cut1
+        else:
+            if ((cut1 <= cut2) and (cut1 < self.calWidth)):
+                cut = cut1
+            elif ((cut2 <= cut1) and (cut2 < self.calWidth)):
+                cut = cut2
+            else:
+                cut = self.calWidth
+
+        DebugPrint("== %d (initial cut)\n" % (cut))
+        if ((cut == 0) or ((idx + cut) > self.calWidth)):
+            DebugPrint("** %d (no more) %s\n" % (idx, eventString))
+            return idx
+
+        if ((idx + cut) < self.calWidth):
+            while ((cut < len(eventString)) and (eventString[cut] == ' ')):
+                DebugPrint("! skipping space\n")
+                cut += 1
+            DebugPrint("=== %d (new cut)\n" % (cut))
+            DebugPrint("!! recurse (%d)\n" % (idx + cut))
+            cut = self._GetCutIndex(eventString[cut:], (idx + cut))
+            DebugPrint("!!!! %d %s\n" % (cut, eventString))
+            return cut
+
+        DebugPrint("** %d cut %s\n" % (idx, eventString))
+        return (idx + cut)
+
+
+    def _GraphEvents(self, defaultDateTime, startDateTime, weeks, eventList):
+
+        if (len(eventList) == 0):
+            PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
+            return
+
+        eventList.sort(lambda x, y:
+                       cmp(parse(x.when[0].start_time,
+                                 default=startDateTime).astimezone(tzlocal()),
+                           parse(y.when[0].start_time,
+                                 default=startDateTime).astimezone(tzlocal())))
+
+        # ignore started events (i.e. that start previous day and end start day)
+        while (len(eventList) and
+               ((parse(eventList[0].when[0].start_time,
+                      default=startDateTime).astimezone(tzlocal())) <
+                startDateTime)):
+            eventList = eventList[1:]
+
+        if (len(eventList) == 0):
+            PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
+            return
+
+        dayDivider = ''
+        for i in range(self.calWidth):
+            dayDivider += '-'
+
+        weekDivider = ''
+        for i in range(7):
+            weekDivider += '+'
+            weekDivider += dayDivider
+        weekDivider += '+'
+
+        days = [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday',
+                 'Thursday', 'Friday', 'Saturday' ]
+
+        dayHeader = ''
+        dayFormat = '%-' + str(self.calWidth) + '.' + str(self.calWidth) + 's'
+        for i in range(7):
+            dayHeader += '|'
+            if self.calMonday:
+                if i == 6:
+                    dayHeader += dayFormat % (days[0])
+                else:
+                    dayHeader += dayFormat % (days[i+1])
+            else:
+                dayHeader += dayFormat % (days[i])
+        dayHeader += '|'
+
+        # get the beginning of the week datetime for the first event
+        startWeekDateTime = \
+            parse(eventList[0].when[0].start_time,
+                  default=startDateTime).astimezone(tzlocal())
+        dayNum = startWeekDateTime.strftime("%w")
+        startWeekDateTime = startWeekDateTime.replace(hour=0,
+                                                      minute=0,
+                                                      second=0,
+                                                      microsecond=0)
+        startWeekDateTime = (startWeekDateTime - timedelta(days=int(dayNum)))
+        endWeekDateTime = (startWeekDateTime + timedelta(days=7))
+
+        PrintMsg(CLR_NRM(), "\n" + weekDivider + "\n")
+        PrintMsg(CLR_NRM(), dayHeader + "\n")
+        PrintMsg(CLR_NRM(), weekDivider + "\n")
+
+        empty = ''
+        for i in range(self.calWidth):
+            empty += ' '
+
+        for i in range(weeks):
+
+            line = "|"
+            for j in range(7):
+                d = (startWeekDateTime + timedelta(days=j)).strftime("%e %b")
+                todayMarker = ''
+                if (self.now.strftime("%e%b%Y") ==
+                    (startWeekDateTime + timedelta(days=j)).strftime("%e%b%Y")):
+                    todayMarker = " ***"
+                line += dayFormat % (d + todayMarker) + "|"
+            PrintMsg(CLR_NRM(), line + "\n")
+
+            weekEventStrings = self._GetWeekEventStrings(startWeekDateTime,
+                                                         endWeekDateTime,
+                                                         eventList)
+            startWeekDateTime = endWeekDateTime
+            endWeekDateTime = (endWeekDateTime + timedelta(days=7))
+
+            while 1:
+
+                done = True
+                line = "|"
+
+                for j in range(7):
+
+                    if (weekEventStrings[j] == ''):
+                        line += empty + "|"
+                        continue
+
+                    if (weekEventStrings[j][0] == '\n'):
+                        weekEventStrings[j] = weekEventStrings[j][1:]
+                        line += empty + "|"
+                        done = False
+                        continue
+
+                    weekEventStrings[j] = weekEventStrings[j].lstrip()
+
+                    cut = self._GetCutIndex(weekEventStrings[j], 0)
+
+                    line += dayFormat % (weekEventStrings[j][:cut])
+                    weekEventStrings[j] = weekEventStrings[j][cut:]
+
+                    done = False
+                    line += "|"
+
+                if done:
+                    break
+
+                PrintMsg(CLR_NRM(), line + "\n")
+
+            PrintMsg(CLR_NRM(), weekDivider + "\n")
+
+
     def _PrintEvents(self, defaultDateTime, startDateTime, eventList):
 
         if (len(eventList) == 0):
@@ -296,7 +509,10 @@ class GoogleCalendar:
             return
 
         eventList.sort(lambda x, y:
-                       cmp(x.when[0].start_time, y.when[0].start_time))
+                       cmp(parse(x.when[0].start_time,
+                                 default=startDateTime).astimezone(tzlocal()),
+                           parse(y.when[0].start_time,
+                                 default=startDateTime).astimezone(tzlocal())))
 
         timeFormat = '%l:%M'
         dayFormat = '\n%a %b %d' # 10 chars for day
@@ -400,8 +616,6 @@ class GoogleCalendar:
 
     def TextQuery(self, searchText=''):
 
-        PrintMsg(CLR_BRYLW(), "\nCurrent Time: %s\n" % (self.now.ctime()))
-
         # the empty string would get *ALL* events...
         if (searchText == ''):
             return
@@ -431,9 +645,7 @@ class GoogleCalendar:
         self._PrintEvents(self.now, self.now, eventList)
 
 
-    def DateQuery(self, startText='', endText=''):
-
-        PrintMsg(CLR_BRYLW(), "\nCurrent Time: %s\n" % (self.now.ctime()))
+    def AgendaQuery(self, startText='', endText=''):
 
         # convert now to midnight this morning and use for default
         today = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -455,9 +667,6 @@ class GoogleCalendar:
             except:
                 PrintErrMsg('\nError: failed to parse end time\n')
                 return
-
-        PrintMsg(CLR_BRWHT(),
-                 '\nAgenda for [ %s <-> %s ]\n' % (start.ctime(), end.ctime()))
 
         eventList = []
 
@@ -481,6 +690,48 @@ class GoogleCalendar:
             eventList.extend(self._GetAllEvents(cal, feed))
 
         self._PrintEvents(today, start, eventList)
+
+
+    def CalQuery(self, startText='', weeks=2):
+
+        # convert now to midnight this morning and use for default
+        today = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        if (startText == ''):
+            start = today
+            dayNum = start.strftime("%w")
+            start = (start - timedelta(days=int(dayNum)))
+        else:
+            try:
+                start = parse(startText, default=today)
+            except:
+                PrintErrMsg('\nError: failed to parse start time\n')
+                return
+
+        end = (start + timedelta(days=(weeks * 7)))
+
+        eventList = []
+
+        for cal in self.cals.entry:
+
+            if not self._CalendarWithinAccess(cal):
+                continue
+
+            # see http://code.google.com/apis/calendar/reference.html#Parameters
+            query = CalendarEventQuery(cal.gcalcli_username,
+                                       cal.gcalcli_visibility,
+                                       cal.gcalcli_projection)
+            query.start_min = start.isoformat()
+            query.start_max = end.isoformat()
+            query.singleevents = 'true'
+            # we sort later after getting events from all calendars
+            #query.orderby = 'starttime'
+            #query.sortorder = 'ascending'
+            feed = self.gcal.CalendarQuery(query)
+
+            eventList.extend(self._GetAllEvents(cal, feed))
+
+        self._GraphEvents(today, start, weeks, eventList)
 
 
     def QuickAdd(self, eventText):
@@ -558,6 +809,8 @@ def DoooooItHippieMonster():
                                     "pw=",
                                     "cals=",
                                     "ignore-started",
+                                    "width=",
+                                    "mon",
                                     "details",
                                     "nc"])
     except getopt.error, msg:
@@ -565,9 +818,11 @@ def DoooooItHippieMonster():
 
     usr           = __username__
     pwd           = __password__
+    access        = 'all'
     details       = False
     ignoreStarted = False
-    access        = 'all'
+    calMonday     = False
+    calWidth      = 10
 
     # Process options
     for opt, arg in opts:
@@ -577,6 +832,8 @@ def DoooooItHippieMonster():
         elif (opt == "--cals"): access = arg
         elif (opt == "--details"): details = True
         elif (opt == "--ignore-started"): ignoreStarted = True
+        elif (opt == "--width"): calWidth = int(arg)
+        elif (opt == "--mon"): Usage() #calMonday = True # not ready yet...)
         elif (opt == "--nc"): CLR.useColor = False
 
     if ((usr == '') or (pwd == '')):
@@ -588,8 +845,9 @@ def DoooooItHippieMonster():
         Usage()
 
     if (args[0] == 'list'):
-        GoogleCalendar(usr, pwd, access, details,
-                       ignoreStarted).ListAllCalendars()
+        GoogleCalendar(username=usr,
+                       password=pwd,
+                       access=access).ListAllCalendars()
 
     elif (args[0] == 'search'):
         if (len(args) != 2):
@@ -597,43 +855,86 @@ def DoooooItHippieMonster():
             Usage()
         # allow unicode strings for input
         uniArg = unicode(args[1], locale.getpreferredencoding())
-        GoogleCalendar(usr, pwd, access,
-                       details, ignoreStarted).TextQuery(uniArg)
+        GoogleCalendar(username=usr,
+                       password=pwd,
+                       access=access,
+                       details=details,
+                       ignoreStarted=ignoreStarted).TextQuery(uniArg)
 
     elif (args[0] == 'agenda'):
         if (len(args) == 3):   # start and end
-            GoogleCalendar(usr, pwd, access,
-                           details, ignoreStarted).DateQuery(args[1], args[2])
+            GoogleCalendar(username=usr,
+                           password=pwd,
+                           access=access,
+                           ignoreStarted=ignoreStarted,
+                           details=details).AgendaQuery(startText=args[1],
+                                                        endText=args[2])
         elif (len(args) == 2): # start
-            GoogleCalendar(usr, pwd, access,
-                           details, ignoreStarted).DateQuery(args[1])
+            GoogleCalendar(username=usr,
+                           password=pwd,
+                           access=access,
+                           ignoreStarted=ignoreStarted,
+                           details=details).AgendaQuery(startText=args[1])
         elif (len(args) == 1): # defaults
-            GoogleCalendar(usr, pwd, access,
-                           details, ignoreStarted).DateQuery()
+            GoogleCalendar(username=usr,
+                           password=pwd,
+                           access=access,
+                           ignoreStarted=ignoreStarted,
+                           details=details).AgendaQuery()
         else:
             PrintErrMsg('\nError: invalid agenda arguments\n')
+            Usage()
+
+    elif (args[0] == 'cal'):
+        if not calWidth:
+            PrintErrMsg('\nError: invalid width, don\'t be an idiot!\n')
+            Usage()
+
+        if (len(args) == 3):   # weeks and start
+            GoogleCalendar(username=usr,
+                           password=pwd,
+                           access=access,
+                           calWidth=calWidth,
+                           calMonday=calMonday).CalQuery(weeks=int(args[1]),
+                                                         startText=args[2])
+        elif (len(args) == 2): # weeks
+            GoogleCalendar(username=usr,
+                           password=pwd,
+                           access=access,
+                           calWidth=calWidth,
+                           calMonday=calMonday).CalQuery(weeks=int(args[1]))
+        else:
+            PrintErrMsg('\nError: invalid cal arguments\n')
             Usage()
 
     elif (args[0] == 'quick'):
         if (len(args) != 2):
             PrintErrMsg('\nError: invalid event text\n')
             Usage()
+
         # allow unicode strings for input
         uniArg = unicode(args[1], locale.getpreferredencoding())
-        GoogleCalendar(usr, pwd, access,
-                       details, ignoreStarted).QuickAdd(uniArg)
+        GoogleCalendar(username=usr,
+                       password=pwd).QuickAdd(uniArg)
         return
 
     elif (args[0] == 'remind'):
         if (len(args) == 3):   # minutes and command
-            GoogleCalendar(usr, pwd, access,
-                           details, ignoreStarted).Remind(int(args[1]), args[2])
+            GoogleCalendar(username=usr,
+                           password=pwd,
+                           access=access,
+                           ignoreStarted=ignoreStarted).Remind(int(args[1]),
+                                                               args[2])
         elif (len(args) == 2): # minutes
-            GoogleCalendar(usr, pwd, access,
-                           details, ignoreStarted).Remind(int(args[1]))
+            GoogleCalendar(username=usr,
+                           password=pwd,
+                           access=access,
+                           ignoreStarted=ignoreStarted).Remind(int(args[1]))
         elif (len(args) == 1): # defaults
-            GoogleCalendar(usr, pwd, access,
-                           details, ignoreStarted).Remind()
+            GoogleCalendar(username=usr,
+                           password=pwd,
+                           access=access,
+                           ignoreStarted=ignoreStarted).Remind()
         else:
             PrintErrMsg('\nError: invalid remind arguments\n')
             Usage()
