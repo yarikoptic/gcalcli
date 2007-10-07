@@ -43,7 +43,7 @@
 #  - configurable 'remind' reminders (i.e. 30 mins before event every 5 mins)
 #  - daemon mode for 'remind' reminders (working from cached data)
 #  - cache calendar information (serialize calendar info to file)
-#  - rc file support for default colors, login info, etc
+#  - color support for 'cal' command output
 #
 
 __username__ = '<username>@gmail.com'
@@ -56,6 +56,7 @@ __author__  = 'Insanum'
 import inspect
 
 import sys, os, re, urllib, getopt, shlex, codecs, locale
+from ConfigParser import ConfigParser
 from gdata.calendar.service import *
 from datetime import *
 from dateutil.tz import *
@@ -404,11 +405,11 @@ class GoogleCalendar:
             return
 
         dayDivider = ''
-        for i in range(self.calWidth):
+        for i in xrange(self.calWidth):
             dayDivider += '-'
 
         weekDivider = ''
-        for i in range(7):
+        for i in xrange(7):
             weekDivider += '+'
             weekDivider += dayDivider
         weekDivider += '+'
@@ -418,7 +419,7 @@ class GoogleCalendar:
 
         dayHeader = ''
         dayFormat = '%-' + str(self.calWidth) + '.' + str(self.calWidth) + 's'
-        for i in range(7):
+        for i in xrange(7):
             dayHeader += '|'
             if self.calMonday:
                 if i == 6:
@@ -446,13 +447,13 @@ class GoogleCalendar:
         PrintMsg(CLR_NRM(), weekDivider + "\n")
 
         empty = ''
-        for i in range(self.calWidth):
+        for i in xrange(self.calWidth):
             empty += ' '
 
-        for i in range(weeks):
+        for i in xrange(weeks):
 
             line = "|"
-            for j in range(7):
+            for j in xrange(7):
                 d = (startWeekDateTime + timedelta(days=j)).strftime("%e %b")
                 todayMarker = ''
                 if (self.now.strftime("%e%b%Y") ==
@@ -472,7 +473,7 @@ class GoogleCalendar:
                 done = True
                 line = "|"
 
-                for j in range(7):
+                for j in xrange(7):
 
                     if (weekEventStrings[j] == ''):
                         line += empty + "|"
@@ -801,6 +802,29 @@ class GoogleCalendar:
             os.execvp(cmd[0], cmd)
 
 
+def LoadConfig():
+
+    config = ConfigParser()
+    config.read(os.path.expanduser('~/.gcalclirc'))
+    return config
+
+
+def GetConfig(config, key, default):
+
+    try:
+        value = config.get('gcalcli', key)
+    except:
+        value = default
+
+    return value
+
+
+def TrueFalse(value):
+
+    if (value.lower() == 'false'): return False
+    else: return True
+
+
 def DoooooItHippieMonster():
 
     try:
@@ -808,21 +832,23 @@ def DoooooItHippieMonster():
                                    ["user=",
                                     "pw=",
                                     "cals=",
+                                    "details",
                                     "ignore-started",
                                     "width=",
                                     "mon",
-                                    "details",
                                     "nc"])
-    except getopt.error, msg:
+    except getopt.error:
         Usage()
 
-    usr           = __username__
-    pwd           = __password__
-    access        = 'all'
-    details       = False
-    ignoreStarted = False
-    calMonday     = False
-    calWidth      = 10
+    config = LoadConfig()
+
+    usr           = GetConfig(config, 'user', __username__)
+    pwd           = GetConfig(config, 'pw', __password__)
+    access        = GetConfig(config, 'cals', 'all')
+    details       = TrueFalse(GetConfig(config, 'details', 'false'))
+    ignoreStarted = TrueFalse(GetConfig(config, 'ignore-started', 'false'))
+    calWidth      = int(GetConfig(config, 'width', '10'))
+    calMonday     = TrueFalse(GetConfig(config, 'mon', 'false'))
 
     # Process options
     for opt, arg in opts:
