@@ -43,7 +43,6 @@
 #  - configurable 'remind' reminders (i.e. 30 mins before event every 5 mins)
 #  - daemon mode for 'remind' reminders (working from cached data)
 #  - cache calendar information (serialize calendar info to file)
-#  - month based output for 'cal' command output
 #  - color support for 'cal' command output
 #  - man page anyone?
 #
