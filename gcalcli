@@ -43,7 +43,9 @@
 #  - configurable 'remind' reminders (i.e. 30 mins before event every 5 mins)
 #  - daemon mode for 'remind' reminders (working from cached data)
 #  - cache calendar information (serialize calendar info to file)
+#  - month based output for 'cal' command output
 #  - color support for 'cal' command output
+#  - man page anyone?
 #
 
 __username__ = '<username>@gmail.com'
@@ -86,9 +88,9 @@ gcalcli [options] command [command args]
           default,          - default (your default main calendar)
           owner,            - owner (your owned calendars)
           editor,           - editor (editable calendar)
+          contributor,      - contributor (non-owner but able to edit)
           read,             - read (read only calendars)
-          freebusy,         - freebusy (only free/busy info visible)
-          contributor]      - contributor (non-owner but able to edit)
+          freebusy]         - freebusy (only free/busy info visible)
 
   --details                 show all event details (i.e. length, location,
                             reminders, contents)
@@ -104,7 +106,15 @@ gcalcli [options] command [command args]
   --width                   the number of characters to use for each column in
                             the 'cal' command output (default is 10)
 
-  --nc                      don't use color sequences
+  --nc                      don't use colors
+
+  --cal-owner-color         specify the colors used for the calendars and dates
+  --cal-editor-color        each of these argument requires a <color> argument
+  --cal-contributor-color   which must be one of [ default, black, brightblack,
+  --cal-read-color          red, brightred, green, brightgreen, yellow,
+  --cal-freebusy-color      brightyellow, blue, brightblue, magenta,
+  --date-color              brightmagenta, cyan, brightcyan, white,
+                            brightwhite ]
 
  Commands:
 
@@ -171,10 +181,6 @@ class CLR_BRCYN(CLR): color = "[36;1m"
 class CLR_WHT(CLR):   color = "[0;37m"
 class CLR_BRWHT(CLR): color = "[37;1m"
 
-class CAL_OWN_CLR(CLR_CYN): pass
-class CAL_READ_CLR(CLR_MAG): pass
-class CAL_DEFAULT_CLR(CLR_NRM): pass
-
 
 def PrintErrMsg(msg):
     if CLR.useColor:
@@ -217,31 +223,49 @@ class GoogleCalendar:
     calMonday     = False
     command       = 'gxmessage -display :0 -center -title "Ding, Ding, Ding!" %s'
 
-    ACCESS_ALL      = 'all'      # non-google access level
-    ACCESS_DEFAULT  = 'default'  # non-google access level
-    ACCESS_NONE     = 'none'
-    ACCESS_READ     = 'read'
-    ACCESS_FREEBUSY = 'freebusy'
-    ACCESS_CONTRIB  = 'contributor'
-    ACCESS_OWNER    = 'owner'
-    ACCESS_EDITOR   = 'editor'
+    calOwnerColor       = CLR_CYN()
+    calEditorColor      = CLR_NRM()
+    calContributorColor = CLR_NRM()
+    calReadColor        = CLR_MAG()
+    calFreeBusyColor    = CLR_NRM()
+    dateColor           = CLR_GRN()
+
+    ACCESS_ALL         = 'all'      # non-google access level
+    ACCESS_DEFAULT     = 'default'  # non-google access level
+    ACCESS_NONE        = 'none'
+    ACCESS_OWNER       = 'owner'
+    ACCESS_EDITOR      = 'editor'
+    ACCESS_CONTRIBUTOR = 'contributor'
+    ACCESS_READ        = 'read'
+    ACCESS_FREEBUSY    = 'freebusy'
 
 
     def _CalendarAccessCmp(self, x, y):
 
-        order = { self.ACCESS_OWNER:1,
-                  self.ACCESS_EDITOR:2,
-                  self.ACCESS_CONTRIB:3,
-                  self.ACCESS_READ:4,
-                  self.ACCESS_FREEBUSY:5,
-                  self.ACCESS_NONE:6 }
+        order = { self.ACCESS_OWNER       : 1,
+                  self.ACCESS_EDITOR      : 2,
+                  self.ACCESS_CONTRIBUTOR : 3,
+                  self.ACCESS_READ        : 4,
+                  self.ACCESS_FREEBUSY    : 5,
+                  self.ACCESS_NONE        : 6 }
 
         return cmp(order[x.access_level.value], order[y.access_level.value])
 
 
-    def __init__(self, username='', password='', access='all',
-                 details=False, ignoreStarted=False, calWidth=10,
-                 calMonday=False):
+    def __init__(self,
+                 username='',
+                 password='',
+                 access='all',
+                 details=False,
+                 ignoreStarted=False,
+                 calWidth=10,
+                 calMonday=False,
+                 calOwnerColor=CLR_CYN(),
+                 calEditorColor=CLR_NRM(),
+                 calContributorColor=CLR_NRM(),
+                 calReadColor=CLR_MAG(),
+                 calFreeBusyColor=CLR_NRM(),
+                 dateColor=CLR_GRN()):
 
         self.gcal          = CalendarService()
         self.username      = username
@@ -251,6 +275,13 @@ class GoogleCalendar:
         self.ignoreStarted = ignoreStarted
         self.calWidth      = calWidth
         self.calMonday     = calMonday
+
+        self.calOwnerColor       = calOwnerColor
+        self.calEditorColor      = calEditorColor
+        self.calContributorColor = calContributorColor
+        self.calReadColor        = calReadColor
+        self.calFreeBusyColor    = calFreeBusyColor
+        self.dateColor           = dateColor
 
         # authenticate and login to google calendar
         try:
@@ -298,16 +329,19 @@ class GoogleCalendar:
     def _CalendarColor(self, cal):
 
         if (cal == None):
-            return CAL_DEFAULT_CLR()
-
-        if (cal.access_level.value == self.ACCESS_OWNER):
-            clr = CAL_OWN_CLR()
+            return CLR_NRM()
+        elif (cal.access_level.value == self.ACCESS_OWNER):
+            return self.calOwnerColor
+        elif (cal.access_level.value == self.ACCESS_EDITOR):
+            return self.calEditorColor
+        elif (cal.access_level.value == self.ACCESS_CONTRIBUTOR):
+            return self.calContributorColor
+        elif (cal.access_level.value == self.ACCESS_FREEBUSY):
+            return self.calFreeBusyColor
         elif (cal.access_level.value == self.ACCESS_READ):
-            clr = CAL_READ_CLR()
+            return self.calReadColor
         else:
-            clr = CAL_DEFAULT_CLR()
-
-        return clr
+            return CLR_NRM()
 
 
     def _GetWeekEventStrings(self, startDateTime, endDateTime, eventList):
@@ -534,7 +568,7 @@ class GoogleCalendar:
             tmpTimeStr = eventStartDateTime.strftime(timeFormat) + meridiem
             prefix = indent
             if (tmpDayStr != day): day = prefix = tmpDayStr
-            PrintMsg(CLR_GRN(), prefix)
+            PrintMsg(self.dateColor, prefix)
             PrintMsg(self._CalendarColor(event.gcalcli_cal),
                      '  %-7s  %s\n' % (tmpTimeStr, event.title.text))
 
@@ -819,10 +853,37 @@ def GetConfig(config, key, default):
     return value
 
 
-def TrueFalse(value):
+def GetTrueFalse(value):
 
     if (value.lower() == 'false'): return False
     else: return True
+
+
+def GetColor(value):
+
+    colors = { 'default'       : CLR_NRM(),
+               'black'         : CLR_BLK(),
+               'brightblack'   : CLR_BRBLK(),
+               'red'           : CLR_RED(),
+               'brightred'     : CLR_BRRED(),
+               'green'         : CLR_GRN(),
+               'brightgreen'   : CLR_BRGRN(),
+               'yellow'        : CLR_YLW(),
+               'brightyellow'  : CLR_BRYLW(),
+               'blue'          : CLR_BLU(),
+               'brightblue'    : CLR_BRBLU(),
+               'magenta'       : CLR_MAG(),
+               'brightmagenta' : CLR_BRMAG(),
+               'cyan'          : CLR_CYN(),
+               'brightcyan'    : CLR_BRCYN(),
+               'white'         : CLR_WHT(),
+               'brightwhite'   : CLR_BRWHT() }
+
+    try:
+        return colors[value]
+    except:
+        PrintErrMsg('\nError: invalid color name\n')
+        Usage()
 
 
 def DoooooItHippieMonster():
@@ -836,20 +897,33 @@ def DoooooItHippieMonster():
                                     "ignore-started",
                                     "width=",
                                     "mon",
-                                    "nc"])
+                                    "nc",
+                                    "date-color=",
+                                    "cal-owner-color=",
+                                    "cal-editor-color=",
+                                    "cal-contributor-color=",
+                                    "cal-read-color=",
+                                    "cal-freebusy-color="])
     except getopt.error:
         Usage()
 
-    config = LoadConfig()
+    cfg = LoadConfig()
 
-    usr           = GetConfig(config, 'user', __username__)
-    pwd           = GetConfig(config, 'pw', __password__)
-    access        = GetConfig(config, 'cals', 'all')
-    details       = TrueFalse(GetConfig(config, 'details', 'false'))
-    ignoreStarted = TrueFalse(GetConfig(config, 'ignore-started', 'false'))
-    calWidth      = int(GetConfig(config, 'width', '10'))
-    #calMonday     = TrueFalse(GetConfig(config, 'mon', 'false'))
+    usr           = GetConfig(cfg, 'user', __username__)
+    pwd           = GetConfig(cfg, 'pw', __password__)
+    access        = GetConfig(cfg, 'cals', 'all')
+    details       = GetTrueFalse(GetConfig(cfg, 'details', 'false'))
+    ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
+    calWidth      = int(GetConfig(cfg, 'width', '10'))
+    #calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
     calMonday     = False
+
+    calOwnerColor       = GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'))
+    calEditorColor      = GetColor(GetConfig(cfg, 'cal-editor-color', 'default')) 
+    calContributorColor = GetColor(GetConfig(cfg, 'cal-contributor-color', 'default'))
+    calReadColor        = GetColor(GetConfig(cfg, 'cal-read-color', 'magenta'))
+    calFreeBusyColor    = GetColor(GetConfig(cfg, 'cal-freebusy-color', 'default'))
+    dateColor           = GetColor(GetConfig(cfg, 'date-color', 'green'))
 
     # Process options
     for opt, arg in opts:
@@ -862,6 +936,12 @@ def DoooooItHippieMonster():
         elif (opt == "--width"): calWidth = int(arg)
         elif (opt == "--mon"): Usage() #calMonday = True # not ready yet...)
         elif (opt == "--nc"): CLR.useColor = False
+        elif (opt == "--cal-owner-color"): calOwnerColor = GetColor(arg)
+        elif (opt == "--cal-editor-color"): calEditorColor = GetColor(arg)
+        elif (opt == "--cal-contributor-color"): calContributorColor = GetColor(arg)
+        elif (opt == "--cal-read-color"): calReadColor = GetColor(arg)
+        elif (opt == "--cal-freebusy-color"): calFreeBusyColor = GetColor(arg)
+        elif (opt == "--date-color"): dateColor = GetColor(arg)
 
     if ((usr == '') or (pwd == '')):
         PrintErrMsg('\nError: must specify username and password\n')
@@ -871,10 +951,22 @@ def DoooooItHippieMonster():
         PrintErrMsg('\nError: no command\n')
         Usage()
 
+    gcal = GoogleCalendar(username=usr,
+                          password=pwd,
+                          access=access,
+                          details=details,
+                          ignoreStarted=ignoreStarted,
+                          calWidth=calWidth,
+                          calMonday=calMonday,
+                          calOwnerColor=calOwnerColor,
+                          calEditorColor=calEditorColor,
+                          calContributorColor=calContributorColor,
+                          calReadColor=calReadColor,
+                          calFreeBusyColor=calFreeBusyColor,
+                          dateColor=dateColor)
+
     if (args[0] == 'list'):
-        GoogleCalendar(username=usr,
-                       password=pwd,
-                       access=access).ListAllCalendars()
+        gcal.ListAllCalendars()
 
     elif (args[0] == 'search'):
         if (len(args) != 2):
@@ -882,32 +974,15 @@ def DoooooItHippieMonster():
             Usage()
         # allow unicode strings for input
         uniArg = unicode(args[1], locale.getpreferredencoding())
-        GoogleCalendar(username=usr,
-                       password=pwd,
-                       access=access,
-                       details=details,
-                       ignoreStarted=ignoreStarted).TextQuery(uniArg)
+        gcal.TextQuery(uniArg)
 
     elif (args[0] == 'agenda'):
         if (len(args) == 3):   # start and end
-            GoogleCalendar(username=usr,
-                           password=pwd,
-                           access=access,
-                           ignoreStarted=ignoreStarted,
-                           details=details).AgendaQuery(startText=args[1],
-                                                        endText=args[2])
+            gcal.AgendaQuery(startText=args[1], endText=args[2])
         elif (len(args) == 2): # start
-            GoogleCalendar(username=usr,
-                           password=pwd,
-                           access=access,
-                           ignoreStarted=ignoreStarted,
-                           details=details).AgendaQuery(startText=args[1])
+            gcal.AgendaQuery(startText=args[1])
         elif (len(args) == 1): # defaults
-            GoogleCalendar(username=usr,
-                           password=pwd,
-                           access=access,
-                           ignoreStarted=ignoreStarted,
-                           details=details).AgendaQuery()
+            gcal.AgendaQuery()
         else:
             PrintErrMsg('\nError: invalid agenda arguments\n')
             Usage()
@@ -918,18 +993,9 @@ def DoooooItHippieMonster():
             Usage()
 
         if (len(args) == 3):   # weeks and start
-            GoogleCalendar(username=usr,
-                           password=pwd,
-                           access=access,
-                           calWidth=calWidth,
-                           calMonday=calMonday).CalQuery(weeks=int(args[1]),
-                                                         startText=args[2])
+            gcal.CalQuery(weeks=int(args[1]), startText=args[2])
         elif (len(args) == 2): # weeks
-            GoogleCalendar(username=usr,
-                           password=pwd,
-                           access=access,
-                           calWidth=calWidth,
-                           calMonday=calMonday).CalQuery(weeks=int(args[1]))
+            gcal.CalQuery(weeks=int(args[1]))
         else:
             PrintErrMsg('\nError: invalid cal arguments\n')
             Usage()
@@ -941,27 +1007,16 @@ def DoooooItHippieMonster():
 
         # allow unicode strings for input
         uniArg = unicode(args[1], locale.getpreferredencoding())
-        GoogleCalendar(username=usr,
-                       password=pwd).QuickAdd(uniArg)
+        gcal.QuickAdd(uniArg)
         return
 
     elif (args[0] == 'remind'):
         if (len(args) == 3):   # minutes and command
-            GoogleCalendar(username=usr,
-                           password=pwd,
-                           access=access,
-                           ignoreStarted=ignoreStarted).Remind(int(args[1]),
-                                                               args[2])
+            gcal.Remind(int(args[1]), args[2])
         elif (len(args) == 2): # minutes
-            GoogleCalendar(username=usr,
-                           password=pwd,
-                           access=access,
-                           ignoreStarted=ignoreStarted).Remind(int(args[1]))
+            gcal.Remind(int(args[1]))
         elif (len(args) == 1): # defaults
-            GoogleCalendar(username=usr,
-                           password=pwd,
-                           access=access,
-                           ignoreStarted=ignoreStarted).Remind()
+            gcal.Remind()
         else:
             PrintErrMsg('\nError: invalid remind arguments\n')
             Usage()
