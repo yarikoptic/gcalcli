@@ -1019,6 +1019,13 @@ def DoooooItHippieMonster():
             PrintErrMsg('\nError: invalid width, don\'t be an idiot!\n')
             Usage()
 
+        if (len(args) >= 2):
+            try:
+                count = int(args[1])
+            except:
+                PrintErrMsg('\nError: invalid calw arguments\n')
+                Usage()
+
         if (len(args) == 3):   # weeks and start
             gcal.CalQuery(args[0], count=int(args[1]), startText=args[2])
         elif (len(args) == 2): # weeks
