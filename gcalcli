@@ -134,9 +134,15 @@ gcalcli [options] command [command args]
                                '20070924T15'
                                '8am'
 
-  cal <weeks> [start]       get an agenda in a nice calendar format
+  calw <weeks> [start]      get a week based agenda in a nice calendar format
                             - weeks is the number of weeks to display
                             - start time default is beginning of this week
+                            - note that all events for the week(s) are displayed
+
+  calm [start]              get a month agenda in a nice calendar format
+                            - start time default is the beginning of this month
+                            - note that all events for the month are displayed
+                              and only one month will be displayed
 
   quick <text>              quick add an event to default calendar
                             - example:
@@ -344,7 +350,8 @@ class GoogleCalendar:
             return CLR_NRM()
 
 
-    def _GetWeekEventStrings(self, startDateTime, endDateTime, eventList):
+    def _GetWeekEventStrings(self, cmd, curMonth,
+                             startDateTime, endDateTime, eventList):
 
         weekEventStrings = [ '', '', '', '', '', '', '' ]
 
@@ -353,6 +360,10 @@ class GoogleCalendar:
             eventStartDateTime = \
                 parse(event.when[0].start_time,
                       default=startDateTime).astimezone(tzlocal())
+
+            if ((cmd == 'calm') and
+                (curMonth != eventStartDateTime.strftime("%b"))):
+                continue
 
             dayNum = int(eventStartDateTime.strftime("%w"))
 
@@ -415,11 +426,8 @@ class GoogleCalendar:
         return (idx + cut)
 
 
-    def _GraphEvents(self, defaultDateTime, startDateTime, weeks, eventList):
-
-        if (len(eventList) == 0):
-            PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
-            return
+    def _GraphEvents(self, cmd, defaultDateTime, startDateTime,
+                     count, eventList):
 
         eventList.sort(lambda x, y:
                        cmp(parse(x.when[0].start_time,
@@ -434,10 +442,6 @@ class GoogleCalendar:
                 startDateTime)):
             eventList = eventList[1:]
 
-        if (len(eventList) == 0):
-            PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
-            return
-
         dayDivider = ''
         for i in xrange(self.calWidth):
             dayDivider += '-'
@@ -448,47 +452,60 @@ class GoogleCalendar:
             weekDivider += dayDivider
         weekDivider += '+'
 
-        days = [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday',
-                 'Thursday', 'Friday', 'Saturday' ]
-
-        dayHeader = ''
-        dayFormat = '%-' + str(self.calWidth) + '.' + str(self.calWidth) + 's'
-        for i in xrange(7):
-            dayHeader += '|'
-            if self.calMonday:
-                if i == 6:
-                    dayHeader += dayFormat % (days[0])
-                else:
-                    dayHeader += dayFormat % (days[i+1])
-            else:
-                dayHeader += dayFormat % (days[i])
-        dayHeader += '|'
-
-        # get the beginning of the week datetime for the first event
-        startWeekDateTime = \
-            parse(eventList[0].when[0].start_time,
-                  default=startDateTime).astimezone(tzlocal())
-        dayNum = startWeekDateTime.strftime("%w")
-        startWeekDateTime = startWeekDateTime.replace(hour=0,
-                                                      minute=0,
-                                                      second=0,
-                                                      microsecond=0)
-        startWeekDateTime = (startWeekDateTime - timedelta(days=int(dayNum)))
-        endWeekDateTime = (startWeekDateTime + timedelta(days=7))
-
-        PrintMsg(CLR_NRM(), "\n" + weekDivider + "\n")
-        PrintMsg(CLR_NRM(), dayHeader + "\n")
-        PrintMsg(CLR_NRM(), weekDivider + "\n")
-
         empty = ''
         for i in xrange(self.calWidth):
             empty += ' '
 
-        for i in xrange(weeks):
+        dayFormat = '%-' + str(self.calWidth) + '.' + str(self.calWidth) + 's'
 
+        # XXX this table needs to change to use current locale (strftime %A)
+        dayNames = [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday',
+                     'Thursday', 'Friday', 'Saturday' ]
+
+        dayHeader = '|'
+        for i in xrange(7):
+            if self.calMonday:
+                if i == 6:
+                    dayHeader += dayFormat % (dayNames[0])
+                else:
+                    dayHeader += dayFormat % (dayNames[i+1])
+            else:
+                dayHeader += dayFormat % (dayNames[i])
+            dayHeader += '|'
+
+        PrintMsg(CLR_NRM(), "\n" + weekDivider + "\n")
+        if (cmd == 'calm'):
+            m = startDateTime.strftime('%B %Y')
+            mw = str((self.calWidth * 7) + 6)
+            mwf = '%-' + mw + '.' + mw + 's'
+            PrintMsg(CLR_NRM(), '|' + mwf % (m) + '|\n')
+            PrintMsg(CLR_NRM(), weekDivider + "\n")
+        PrintMsg(CLR_NRM(), dayHeader + "\n")
+        PrintMsg(CLR_NRM(), weekDivider + "\n")
+
+        curMonth = startDateTime.strftime("%b")
+
+        # get date range objects for the first week
+        if (cmd == 'calm'):
+            dayNum = startDateTime.strftime("%w")
+            startDateTime = (startDateTime - timedelta(days=int(dayNum)))
+        startWeekDateTime = startDateTime
+        endWeekDateTime = (startWeekDateTime + timedelta(days=7))
+
+        for i in xrange(count):
+
+            # create/print date line
             line = "|"
             for j in xrange(7):
-                d = (startWeekDateTime + timedelta(days=j)).strftime("%e %b")
+                if (cmd == 'calw'):
+                    d = (startWeekDateTime +
+                         timedelta(days=j)).strftime("%e %b")
+                else: # (cmd == 'calm'):
+                    d = (startWeekDateTime +
+                         timedelta(days=j)).strftime("%e")
+                    if (curMonth != (startWeekDateTime +
+                                     timedelta(days=j)).strftime("%b")):
+                        d = ''
                 todayMarker = ''
                 if (self.now.strftime("%e%b%Y") ==
                     (startWeekDateTime + timedelta(days=j)).strftime("%e%b%Y")):
@@ -496,9 +513,12 @@ class GoogleCalendar:
                 line += dayFormat % (d + todayMarker) + "|"
             PrintMsg(CLR_NRM(), line + "\n")
 
-            weekEventStrings = self._GetWeekEventStrings(startWeekDateTime,
+            weekEventStrings = self._GetWeekEventStrings(cmd, curMonth,
+                                                         startWeekDateTime,
                                                          endWeekDateTime,
                                                          eventList)
+
+            # get date range objects for the next week
             startWeekDateTime = endWeekDateTime
             endWeekDateTime = (endWeekDateTime + timedelta(days=7))
 
@@ -727,23 +747,31 @@ class GoogleCalendar:
         self._PrintEvents(today, start, eventList)
 
 
-    def CalQuery(self, startText='', weeks=2):
+    def CalQuery(self, cmd, startText='', count=1):
 
         # convert now to midnight this morning and use for default
         today = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
 
         if (startText == ''):
             start = today
-            dayNum = start.strftime("%w")
-            start = (start - timedelta(days=int(dayNum)))
         else:
             try:
                 start = parse(startText, default=today)
+                start = start.replace(hour=0, minute=0, second=0, microsecond=0)
             except:
                 PrintErrMsg('\nError: failed to parse start time\n')
                 return
 
-        end = (start + timedelta(days=(weeks * 7)))
+        # convert start date to the beginning of the week or month
+        if (cmd == 'calw'):
+            dayNum = start.strftime("%w")
+            start = (start - timedelta(days=int(dayNum)))
+            end = (start + timedelta(days=(count * 7)))
+        else: # (cmd == 'calwm'):
+            start = (start - timedelta(days=(start.day - 1)))
+            end = (start + timedelta(days=(count * 31))) # might get extra (ok)
+            # XXX math incorrent here (see Sep 2007)
+            count = ((count * 31) / 7) + 1
 
         eventList = []
 
@@ -766,7 +794,7 @@ class GoogleCalendar:
 
             eventList.extend(self._GetAllEvents(cal, feed))
 
-        self._GraphEvents(today, start, weeks, eventList)
+        self._GraphEvents(cmd, today, start, count, eventList)
 
 
     def QuickAdd(self, eventText):
@@ -987,17 +1015,32 @@ def DoooooItHippieMonster():
             PrintErrMsg('\nError: invalid agenda arguments\n')
             Usage()
 
-    elif (args[0] == 'cal'):
+    elif (args[0] == 'calw'):
         if not calWidth:
             PrintErrMsg('\nError: invalid width, don\'t be an idiot!\n')
             Usage()
 
         if (len(args) == 3):   # weeks and start
-            gcal.CalQuery(weeks=int(args[1]), startText=args[2])
+            gcal.CalQuery(args[0], count=int(args[1]), startText=args[2])
         elif (len(args) == 2): # weeks
-            gcal.CalQuery(weeks=int(args[1]))
+            gcal.CalQuery(args[0], count=int(args[1]))
+        elif (len(args) == 1): # defaults
+            gcal.CalQuery(args[0])
         else:
-            PrintErrMsg('\nError: invalid cal arguments\n')
+            PrintErrMsg('\nError: invalid calw arguments\n')
+            Usage()
+
+    elif (args[0] == 'calm'):
+        if not calWidth:
+            PrintErrMsg('\nError: invalid width, don\'t be an idiot!\n')
+            Usage()
+
+        if (len(args) == 2): # start
+            gcal.CalQuery(args[0], startText=args[1])
+        elif (len(args) == 1): # defaults
+            gcal.CalQuery(args[0])
+        else:
+            PrintErrMsg('\nError: invalid calm arguments\n')
             Usage()
 
     elif (args[0] == 'quick'):
