@@ -78,11 +78,13 @@ gcalcli [options] command [command args]
 
   --help                   this usage text
 
+  --config <file>          config file to read (default is '~/.gcalclirc')
+
   --user <username>        google username
 
   --pw <password>          password
 
-  --cals=[all,             'calendars' to work with (default is all calendars)
+  --cals [all,             'calendars' to work with (default is all calendars)
           default,         - default (your default main calendar)
           owner,           - owner (your owned calendars)
           editor,          - editor (editable calendar)
@@ -90,7 +92,7 @@ gcalcli [options] command [command args]
           read,            - read (read only calendars)
           freebusy]        - freebusy (only free/busy info visible)
 
-  --cal=<name>             'calendar' to work with (default is all calendars)
+  --cal <name>             'calendar' to work with (default is all calendars)
                            - you can specify a calendar by name or by using a
                              regular expression to match multiple calendars
                            - you can use multiple '--cal' arguments on the
@@ -886,10 +888,10 @@ class GoogleCalendar:
             os.execvp(cmd[0], cmd)
 
 
-def LoadConfig():
+def LoadConfig(configFile):
 
     config = ConfigParser()
-    config.read(os.path.expanduser('~/.gcalclirc'))
+    config.read(os.path.expanduser(configFile))
     return config
 
 
@@ -940,7 +942,8 @@ def DoooooItHippieMonster():
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "",
-                                   ["user=",
+                                   ["config=",
+                                    "user=",
                                     "pw=",
                                     "cals=",
                                     "cal=",
@@ -958,7 +961,14 @@ def DoooooItHippieMonster():
     except getopt.error:
         Usage()
 
-    cfg = LoadConfig()
+    configFile = '~/.gcalclirc'
+
+    # look for config file override then load the config file
+    # we do this first because command line args take precedence
+    for opt, arg in opts:
+        if (opt == "--config"): configFile = arg
+
+    cfg = LoadConfig(configFile)
 
     usr           = GetConfig(cfg, 'user', __username__)
     pwd           = GetConfig(cfg, 'pw', __password__)
