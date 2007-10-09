@@ -233,7 +233,7 @@ class GoogleCalendar:
     calContributorColor = CLR_NRM()
     calReadColor        = CLR_MAG()
     calFreeBusyColor    = CLR_NRM()
-    dateColor           = CLR_GRN()
+    dateColor           = CLR_YLW()
 
     ACCESS_ALL         = 'all'      # non-google access level
     ACCESS_DEFAULT     = 'default'  # non-google access level
@@ -266,7 +266,7 @@ class GoogleCalendar:
                  calWidth=10,
                  calMonday=False,
                  calOwnerColor=CLR_CYN(),
-                 calEditorColor=CLR_NRM(),
+                 calEditorColor=CLR_GRN(),
                  calContributorColor=CLR_NRM(),
                  calReadColor=CLR_MAG(),
                  calFreeBusyColor=CLR_NRM(),
@@ -946,11 +946,11 @@ def DoooooItHippieMonster():
     calMonday     = False
 
     calOwnerColor       = GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'))
-    calEditorColor      = GetColor(GetConfig(cfg, 'cal-editor-color', 'default')) 
+    calEditorColor      = GetColor(GetConfig(cfg, 'cal-editor-color', 'green')) 
     calContributorColor = GetColor(GetConfig(cfg, 'cal-contributor-color', 'default'))
     calReadColor        = GetColor(GetConfig(cfg, 'cal-read-color', 'magenta'))
     calFreeBusyColor    = GetColor(GetConfig(cfg, 'cal-freebusy-color', 'default'))
-    dateColor           = GetColor(GetConfig(cfg, 'date-color', 'green'))
+    dateColor           = GetColor(GetConfig(cfg, 'date-color', 'yellow'))
 
     # Process options
     for opt, arg in opts:
