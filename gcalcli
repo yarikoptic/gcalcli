@@ -973,8 +973,7 @@ def DoooooItHippieMonster():
     usr           = GetConfig(cfg, 'user', __username__)
     pwd           = GetConfig(cfg, 'pw', __password__)
     access        = GetConfig(cfg, 'cals', 'all')
-    #workCalNames  = [ GetConfig(cfg, 'cal', None) ]
-    workCalNames  = []
+    workCalNames  = [ GetConfig(cfg, 'cal', None) ]
     details       = GetTrueFalse(GetConfig(cfg, 'details', 'false'))
     ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
     calWidth      = int(GetConfig(cfg, 'width', '10'))
@@ -987,6 +986,10 @@ def DoooooItHippieMonster():
     calReadColor        = GetColor(GetConfig(cfg, 'cal-read-color', 'magenta'))
     calFreeBusyColor    = GetColor(GetConfig(cfg, 'cal-freebusy-color', 'default'))
     dateColor           = GetColor(GetConfig(cfg, 'date-color', 'yellow'))
+
+    # fix wokCalNames when not specified in config file
+    if ((len(workCalNames) == 1) and (workCalNames[0] == None)):
+        workCalNames = []
 
     # Process options
     for opt, arg in opts:
