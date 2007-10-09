@@ -36,9 +36,8 @@
 #  - ElementTree Python module - http://effbot.org/zone/element-index.htm
 #  - dateutil Python module - http://www.labix.org/python-dateutil
 #
-# TODO:
+# TODO (maybe):
 #  - import meeting.ics Outlook events ("gcalcli import <file|stdin>")
-#  - calendar selection (perform operation against a single calendar)
 #  - add (non-quick) events with ability to set reminders, repeat, guests, etc
 #  - configurable 'remind' reminders (i.e. 30 mins before event every 5 mins)
 #  - daemon mode for 'remind' reminders (working from cached data)
@@ -77,85 +76,90 @@ gcalcli [options] command [command args]
 
  Options:
 
-  --help                    this usage text
+  --help                   this usage text
 
-  --user <username>         google username
+  --user <username>        google username
 
-  --pw <password>           password
+  --pw <password>          password
 
-  --cals=[all,              calendars to work with (default is all calendars)
-          default,          - default (your default main calendar)
-          owner,            - owner (your owned calendars)
-          editor,           - editor (editable calendar)
-          contributor,      - contributor (non-owner but able to edit)
-          read,             - read (read only calendars)
-          freebusy]         - freebusy (only free/busy info visible)
+  --cals=[all,             'calendars' to work with (default is all calendars)
+          default,         - default (your default main calendar)
+          owner,           - owner (your owned calendars)
+          editor,          - editor (editable calendar)
+          contributor,     - contributor (non-owner but able to edit)
+          read,            - read (read only calendars)
+          freebusy]        - freebusy (only free/busy info visible)
 
-  --details                 show all event details (i.e. length, location,
-                            reminders, contents)
+  --cal=<name>             'calendar' to work with (default is all calendars)
+                           - you can specify a calendar by name or by using a
+                             regular expression to match multiple calendars
+                           - you can use multiple '--cal' arguments on the
+                             command line
 
-  --ignore-started          ignore old or already started events
-                            - when used with the 'agenda' command, ignore events
-                              that have already started and are in-progress with
-                              respect to the specified [start] time
-                            - when used with the 'search' command, ignore events
-                              that have already occurred and only show future
-                              events
+  --details                show all event details (i.e. length, location,
+                           reminders, contents)
 
-  --width                   the number of characters to use for each column in
-                            the 'cal' command output (default is 10)
+  --ignore-started         ignore old or already started events
+                           - when used with the 'agenda' command, ignore events
+                             that have already started and are in-progress with
+                             respect to the specified [start] time
+                           - when used with the 'search' command, ignore events
+                             that have already occurred and only show future
+                             events
 
-  --nc                      don't use colors
+  --width                  the number of characters to use for each column in
+                           the 'cal' command output (default is 10)
 
-  --cal-owner-color         specify the colors used for the calendars and dates
-  --cal-editor-color        each of these argument requires a <color> argument
-  --cal-contributor-color   which must be one of [ default, black, brightblack,
-  --cal-read-color          red, brightred, green, brightgreen, yellow,
-  --cal-freebusy-color      brightyellow, blue, brightblue, magenta,
-  --date-color              brightmagenta, cyan, brightcyan, white,
-                            brightwhite ]
+  --nc                     don't use colors
+
+  --cal-owner-color        specify the colors used for the calendars and dates
+  --cal-editor-color       each of these argument requires a <color> argument
+  --cal-contributor-color  which must be one of [ default, black, brightblack,
+  --cal-read-color         red, brightred, green, brightgreen, yellow,
+  --cal-freebusy-color     brightyellow, blue, brightblue, magenta,
+  --date-color             brightmagenta, cyan, brightcyan, white,
+                           brightwhite ]
 
  Commands:
 
-  list                      list all calendars
+  list                     list all calendars
 
-  search <text>             search for events
-                            - only matches whole words
+  search <text>            search for events
+                           - only matches whole words
 
-  agenda [start] [end]      get an agenda for a time period
-                            - start time default is 12am today
-                            - end time default is 5 days from start
-                            - example time strings:
-                               '9/24/2007'
-                               'Sep 24 2007 3:30pm'
-                               '2007-09-24T15:30'
-                               '2007-09-24T15:30-8:00'
-                               '20070924T15'
-                               '8am'
+  agenda [start] [end]     get an agenda for a time period
+                           - start time default is 12am today
+                           - end time default is 5 days from start
+                           - example time strings:
+                              '9/24/2007'
+                              'Sep 24 2007 3:30pm'
+                              '2007-09-24T15:30'
+                              '2007-09-24T15:30-8:00'
+                              '20070924T15'
+                              '8am'
 
-  calw <weeks> [start]      get a week based agenda in a nice calendar format
-                            - weeks is the number of weeks to display
-                            - start time default is beginning of this week
-                            - note that all events for the week(s) are displayed
+  calw <weeks> [start]     get a week based agenda in a nice calendar format
+                           - weeks is the number of weeks to display
+                           - start time default is beginning of this week
+                           - note that all events for the week(s) are displayed
 
-  calm [start]              get a month agenda in a nice calendar format
-                            - start time default is the beginning of this month
-                            - note that all events for the month are displayed
-                              and only one month will be displayed
+  calm [start]             get a month agenda in a nice calendar format
+                           - start time default is the beginning of this month
+                           - note that all events for the month are displayed
+                             and only one month will be displayed
 
-  quick <text>              quick add an event to default calendar
-                            - example:
-                               'Dinner with Eric 7pm tomorrow'
-                               '5pm 10/31 Trick or Treat'
+  quick <text>             quick add an event to default calendar
+                           - example:
+                              'Dinner with Eric 7pm tomorrow'
+                              '5pm 10/31 Trick or Treat'
 
-  remind <mins> <command>   execute command if event occurs within <mins>
-                            minutes time ('%s' in <command> is replaced with
-                            event start time and title text)
-                            - <minutes> default is 10
-                            - default command:
-                               'gxmessage -display :0 -center \\
-                                          -title "Ding, Ding, Ding!" %s'
-
+  remind <mins> <command>  execute command if event occurs within <mins>
+                           minutes time ('%s' in <command> is replaced with
+                           event start time and title text)
+                           - <minutes> default is 10
+                           - default command:
+                              'gxmessage -display :0 -center \\
+                                         -title "Ding, Ding, Ding!" %s'
 ''')
     sys.exit(1)
 
@@ -215,13 +219,15 @@ def DebugPrint(msg):
 class GoogleCalendar:
 
     gcal          = None
-    cals          = None
+    allCals       = None
+    workCals      = []
     now           = datetime.now(tzlocal())
     feedPrefix    = 'http://www.google.com/calendar/feeds/'
     agendaLength  = 5
     username      = ''
     password      = ''
     access        = ''
+    workCalNames  = []
     details       = False
     ignoreStarted = False
     calWidth      = 10
@@ -245,22 +251,11 @@ class GoogleCalendar:
     ACCESS_FREEBUSY    = 'freebusy'
 
 
-    def _CalendarAccessCmp(self, x, y):
-
-        order = { self.ACCESS_OWNER       : 1,
-                  self.ACCESS_EDITOR      : 2,
-                  self.ACCESS_CONTRIBUTOR : 3,
-                  self.ACCESS_READ        : 4,
-                  self.ACCESS_FREEBUSY    : 5,
-                  self.ACCESS_NONE        : 6 }
-
-        return cmp(order[x.access_level.value], order[y.access_level.value])
-
-
     def __init__(self,
                  username='',
                  password='',
                  access='all',
+                 workCalNames=[],
                  details=False,
                  ignoreStarted=False,
                  calWidth=10,
@@ -276,6 +271,7 @@ class GoogleCalendar:
         self.username      = username
         self.password      = password
         self.access        = access
+        self.workCalNames  = workCalNames
         self.details       = details
         self.ignoreStarted = ignoreStarted
         self.calWidth      = calWidth
@@ -300,17 +296,35 @@ class GoogleCalendar:
             sys.exit(1)
 
         # get the list of calendars
-        self.cals = self.gcal.GetAllCalendarsFeed()
+        self.allCals = self.gcal.GetAllCalendarsFeed()
 
-        self.cals.entry.sort(self._CalendarAccessCmp)
+        order = { self.ACCESS_OWNER       : 1,
+                  self.ACCESS_EDITOR      : 2,
+                  self.ACCESS_CONTRIBUTOR : 3,
+                  self.ACCESS_READ        : 4,
+                  self.ACCESS_FREEBUSY    : 5,
+                  self.ACCESS_NONE        : 6 }
 
-        for cal in self.cals.entry:
+        self.allCals.entry.sort(lambda x, y:
+                                cmp(order[x.access_level.value],
+                                    order[y.access_level.value]))
+
+        for cal in self.allCals.entry:
+
             cal.gcalcli_altLink = cal.GetAlternateLink().href
             match = re.match('^' + self.feedPrefix + '(.*?)/(.*?)/(.*)$',
                              cal.gcalcli_altLink)
             cal.gcalcli_username    = urllib.unquote(match.group(1))
             cal.gcalcli_visibility  = urllib.unquote(match.group(2))
             cal.gcalcli_projection  = urllib.unquote(match.group(3))
+
+            if len(self.workCalNames):
+                for wc in self.workCalNames:
+                    if re.search(wc.lower(), cal.title.text.lower()):
+                        self.workCals.append(cal)
+            else:
+                self.workCals.append(cal)
+
 
 
     def _CalendarWithinAccess(self, cal):
@@ -652,20 +666,20 @@ class GoogleCalendar:
 
         accessLen = 0
 
-        for cal in self.cals.entry:
+        for cal in self.allCals.entry:
             length = len(cal.access_level.value)
             if (length > accessLen): accessLen = length
 
         if (accessLen < len('Access')): accessLen = len('Access')
 
-        format = ' %02s  %0' + str(accessLen) + 's  %s\n'
+        format = ' %0' + str(accessLen) + 's  %s\n'
 
-        PrintMsg(CLR_BRYLW(), "\n" + format % ('ID', 'Access', 'Title'))
-        PrintMsg(CLR_BRYLW(), format % ('--', '------', '-----'))
+        PrintMsg(CLR_BRYLW(), "\n" + format % ('Access', 'Title'))
+        PrintMsg(CLR_BRYLW(), format % ('------', '-----'))
 
-        for i, cal in zip(xrange(len(self.cals.entry)), self.cals.entry):
+        for cal in self.allCals.entry:
             PrintMsg(self._CalendarColor(cal),
-                     format % (i, cal.access_level.value, cal.title.text))
+                     format % (cal.access_level.value, cal.title.text))
 
 
     def TextQuery(self, searchText=''):
@@ -679,7 +693,7 @@ class GoogleCalendar:
 
         eventList = []
 
-        for cal in self.cals.entry:
+        for cal in self.workCals:
 
             if not self._CalendarWithinAccess(cal):
                 continue
@@ -724,7 +738,7 @@ class GoogleCalendar:
 
         eventList = []
 
-        for cal in self.cals.entry:
+        for cal in self.workCals:
 
             if not self._CalendarWithinAccess(cal):
                 continue
@@ -774,7 +788,7 @@ class GoogleCalendar:
 
         eventList = []
 
-        for cal in self.cals.entry:
+        for cal in self.workCals:
 
             if not self._CalendarWithinAccess(cal):
                 continue
@@ -920,6 +934,7 @@ def DoooooItHippieMonster():
                                    ["user=",
                                     "pw=",
                                     "cals=",
+                                    "cal=",
                                     "details",
                                     "ignore-started",
                                     "width=",
@@ -939,6 +954,8 @@ def DoooooItHippieMonster():
     usr           = GetConfig(cfg, 'user', __username__)
     pwd           = GetConfig(cfg, 'pw', __password__)
     access        = GetConfig(cfg, 'cals', 'all')
+    #workCalNames  = [ GetConfig(cfg, 'cal', None) ]
+    workCalNames  = []
     details       = GetTrueFalse(GetConfig(cfg, 'details', 'false'))
     ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
     calWidth      = int(GetConfig(cfg, 'width', '10'))
@@ -958,6 +975,7 @@ def DoooooItHippieMonster():
         elif (opt == "--user"): usr = arg
         elif (opt == "--pw"): pwd = arg
         elif (opt == "--cals"): access = arg
+        elif (opt == "--cal"): workCalNames.append(arg)
         elif (opt == "--details"): details = True
         elif (opt == "--ignore-started"): ignoreStarted = True
         elif (opt == "--width"): calWidth = int(arg)
@@ -981,6 +999,7 @@ def DoooooItHippieMonster():
     gcal = GoogleCalendar(username=usr,
                           password=pwd,
                           access=access,
+                          workCalNames=workCalNames,
                           details=details,
                           ignoreStarted=ignoreStarted,
                           calWidth=calWidth,
