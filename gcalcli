@@ -782,9 +782,18 @@ class GoogleCalendar:
             end = (start + timedelta(days=(count * 7)))
         else: # (cmd == 'calwm'):
             start = (start - timedelta(days=(start.day - 1)))
-            end = (start + timedelta(days=(count * 31))) # might get extra (ok)
-            # XXX math incorrent here (see Sep 2007)
-            count = ((count * 31) / 7) + 1
+            endMonth = (start.month + 1)
+            endYear = start.year
+            if (endMonth == 13):
+                endMonth = 1
+                endYear += 1
+            end = start.replace(month=endMonth, year=endYear)
+            daysInMonth = (end - start).days
+            offsetDays = int(start.strftime('%w'))
+            totalDays = (daysInMonth + offsetDays)
+            count = (totalDays / 7)
+            if (totalDays % 7):
+                count += 1
 
         eventList = []
 
