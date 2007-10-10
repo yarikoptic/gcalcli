@@ -441,14 +441,7 @@ class GoogleCalendar:
         return (idx + cut)
 
 
-    def _GraphEvents(self, cmd, defaultDateTime, startDateTime,
-                     count, eventList):
-
-        eventList.sort(lambda x, y:
-                       cmp(parse(x.when[0].start_time,
-                                 default=startDateTime).astimezone(tzlocal()),
-                           parse(y.when[0].start_time,
-                                 default=startDateTime).astimezone(tzlocal())))
+    def _GraphEvents(self, cmd, startDateTime, count, eventList):
 
         # ignore started events (i.e. that start previous day and end start day)
         while (len(eventList) and
@@ -578,12 +571,6 @@ class GoogleCalendar:
             PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
             return
 
-        eventList.sort(lambda x, y:
-                       cmp(parse(x.when[0].start_time,
-                                 default=startDateTime).astimezone(tzlocal()),
-                           parse(y.when[0].start_time,
-                                 default=startDateTime).astimezone(tzlocal())))
-
         timeFormat = '%l:%M'
         dayFormat = '\n%a %b %d' # 10 chars for day
         indent = '          ' # 10 spaces
@@ -664,6 +651,44 @@ class GoogleCalendar:
         return eventList
 
 
+    def _SearchForCalEvents(self, start, end, defaultDateTime, searchText):
+
+        eventList = []
+
+        for cal in self.workCals:
+
+            if not self._CalendarWithinAccess(cal):
+                continue
+
+            # see http://code.google.com/apis/calendar/reference.html#Parameters
+            if not searchText:
+                query = CalendarEventQuery(cal.gcalcli_username,
+                                           cal.gcalcli_visibility,
+                                           cal.gcalcli_projection)
+                query.start_min = start.isoformat()
+                query.start_max = end.isoformat()
+            else:
+                query = CalendarEventQuery(cal.gcalcli_username,
+                                           cal.gcalcli_visibility,
+                                           cal.gcalcli_projection,
+                                           searchText)
+            query.singleevents = 'true'
+            # we sort later after getting events from all calendars
+            #query.orderby = 'starttime'
+            #query.sortorder = 'ascending'
+            feed = self.gcal.CalendarQuery(query)
+
+            eventList.extend(self._GetAllEvents(cal, feed))
+
+        eventList.sort(lambda x, y:
+                       cmp(parse(x.when[0].start_time,
+                                 default=defaultDateTime).astimezone(tzlocal()),
+                           parse(y.when[0].start_time,
+                                 default=defaultDateTime).astimezone(tzlocal())))
+
+        return eventList
+
+
     def ListAllCalendars(self):
 
         accessLen = 0
@@ -690,27 +715,7 @@ class GoogleCalendar:
         if (searchText == ''):
             return
 
-        PrintMsg(CLR_BRWHT(),
-                 '\nSearching calendar events for: "%s"\n' % (searchText))
-
-        eventList = []
-
-        for cal in self.workCals:
-
-            if not self._CalendarWithinAccess(cal):
-                continue
-
-            query = CalendarEventQuery(cal.gcalcli_username,
-                                       cal.gcalcli_visibility,
-                                       cal.gcalcli_projection,
-                                       searchText)
-            query.singleevents = 'true'
-            # we sort later after getting events from all calendars
-            #query.orderby = 'starttime'
-            #query.sortorder = 'ascending'
-            feed = self.gcal.CalendarQuery(query)
-
-            eventList.extend(self._GetAllEvents(cal, feed))
+        eventList = self._SearchForCalEvents(None, None, self.now, searchText)
 
         self._PrintEvents(self.now, self.now, eventList)
 
@@ -738,26 +743,7 @@ class GoogleCalendar:
                 PrintErrMsg('\nError: failed to parse end time\n')
                 return
 
-        eventList = []
-
-        for cal in self.workCals:
-
-            if not self._CalendarWithinAccess(cal):
-                continue
-
-            # see http://code.google.com/apis/calendar/reference.html#Parameters
-            query = CalendarEventQuery(cal.gcalcli_username,
-                                       cal.gcalcli_visibility,
-                                       cal.gcalcli_projection)
-            query.start_min = start.isoformat()
-            query.start_max = end.isoformat()
-            query.singleevents = 'true'
-            # we sort later after getting events from all calendars
-            #query.orderby = 'starttime'
-            #query.sortorder = 'ascending'
-            feed = self.gcal.CalendarQuery(query)
-
-            eventList.extend(self._GetAllEvents(cal, feed))
+        eventList = self._SearchForCalEvents(start, end, start, None)
 
         self._PrintEvents(today, start, eventList)
 
@@ -797,28 +783,9 @@ class GoogleCalendar:
             if (totalDays % 7):
                 count += 1
 
-        eventList = []
+        eventList = self._SearchForCalEvents(start, end, start, None)
 
-        for cal in self.workCals:
-
-            if not self._CalendarWithinAccess(cal):
-                continue
-
-            # see http://code.google.com/apis/calendar/reference.html#Parameters
-            query = CalendarEventQuery(cal.gcalcli_username,
-                                       cal.gcalcli_visibility,
-                                       cal.gcalcli_projection)
-            query.start_min = start.isoformat()
-            query.start_max = end.isoformat()
-            query.singleevents = 'true'
-            # we sort later after getting events from all calendars
-            #query.orderby = 'starttime'
-            #query.sortorder = 'ascending'
-            feed = self.gcal.CalendarQuery(query)
-
-            eventList.extend(self._GetAllEvents(cal, feed))
-
-        self._GraphEvents(cmd, today, start, count, eventList)
+        self._GraphEvents(cmd, start, count, eventList)
 
 
     def QuickAdd(self, eventText):
@@ -845,16 +812,7 @@ class GoogleCalendar:
         start = self.now
         end   = (start + timedelta(minutes=(minutes + 5)))
 
-        # see http://code.google.com/apis/calendar/reference.html#Parameters
-        query = CalendarEventQuery(self.username, 'private', 'full')
-        query.start_min = start.isoformat()
-        query.start_max = end.isoformat()
-        query.singleevents = 'true'
-        query.orderby = 'starttime'
-        query.sortorder = 'ascending'
-        feed = self.gcal.CalendarQuery(query)
-
-        eventList = self._GetAllEvents(None, feed)
+        eventList = self._SearchForCalEvents(start, end, start, None)
 
         message = ''
 
