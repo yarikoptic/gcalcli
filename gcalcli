@@ -158,7 +158,7 @@ gcalcli [options] command [command args]
   remind <mins> <command>  execute command if event occurs within <mins>
                            minutes time ('%s' in <command> is replaced with
                            event start time and title text)
-                           - <minutes> default is 10
+                           - <mins> default is 10
                            - default command:
                               'gxmessage -display :0 -center \\
                                          -title "Ding, Ding, Ding!" %s'
@@ -802,8 +802,6 @@ class GoogleCalendar:
 
 
     def Remind(self, minutes=10, command=None):
-
-        # default calendar only for now...
 
         if (command == None):
             command = self.command
