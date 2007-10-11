@@ -150,7 +150,7 @@ gcalcli [options] command [command args]
                            - note that all events for the month are displayed
                              and only one month will be displayed
 
-  quick <text>             quick add an event to default calendar
+  quick <text>             quick add an event to your default calendar
                            - example:
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
