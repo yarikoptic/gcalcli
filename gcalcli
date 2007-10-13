@@ -42,7 +42,6 @@
 #  - configurable 'remind' reminders (i.e. 30 mins before event every 5 mins)
 #  - daemon mode for 'remind' reminders (working from cached data)
 #  - cache calendar information (serialize calendar info to file)
-#  - color support for 'cal' command output
 #  - man page anyone?
 #
 
@@ -50,7 +49,7 @@ __username__ = '<username>@gmail.com'
 __password__ = '<password>'
 
 __program__ = 'gcalcli'
-__version__ = 'v1.3'
+__version__ = 'v1.4'
 __author__  = 'Insanum'
 
 import inspect
@@ -120,7 +119,7 @@ gcalcli [options] command [command args]
   --cal-read-color         red, brightred, green, brightgreen, yellow,
   --cal-freebusy-color     brightyellow, blue, brightblue, magenta,
   --date-color             brightmagenta, cyan, brightcyan, white,
-                           brightwhite ]
+  --border-color           brightwhite ]
 
  Commands:
 
@@ -242,6 +241,7 @@ class GoogleCalendar:
     calReadColor        = CLR_MAG()
     calFreeBusyColor    = CLR_NRM()
     dateColor           = CLR_YLW()
+    borderColor         = CLR_WHT()
 
     ACCESS_ALL         = 'all'      # non-google access level
     ACCESS_DEFAULT     = 'default'  # non-google access level
@@ -267,7 +267,8 @@ class GoogleCalendar:
                  calContributorColor=CLR_NRM(),
                  calReadColor=CLR_MAG(),
                  calFreeBusyColor=CLR_NRM(),
-                 dateColor=CLR_GRN()):
+                 dateColor=CLR_GRN(),
+                 borderColor=CLR_WHT()):
 
         self.gcal          = CalendarService()
         self.username      = username
@@ -285,6 +286,7 @@ class GoogleCalendar:
         self.calReadColor        = calReadColor
         self.calFreeBusyColor    = calFreeBusyColor
         self.dateColor           = dateColor
+        self.borderColor         = borderColor
 
         # authenticate and login to google calendar
         try:
@@ -387,8 +389,11 @@ class GoogleCalendar:
 
                 meridiem = eventStartDateTime.strftime('%p').lower()
                 tmpTimeStr = eventStartDateTime.strftime("%l:%M") + meridiem
+                # newline and empty string are the keys to turn off coloring
                 weekEventStrings[dayNum] += \
-                    "\n" + tmpTimeStr.strip() + " " + event.title.text.strip()
+                    "\n" + \
+                    str(self._CalendarColor(event.gcalcli_cal)) + \
+                    tmpTimeStr.strip() + " " + event.title.text.strip()
 
         return weekEventStrings
 
@@ -459,6 +464,7 @@ class GoogleCalendar:
             weekDivider += '+'
             weekDivider += dayDivider
         weekDivider += '+'
+        weekDivider = str(self.borderColor) + weekDivider + str(CLR_NRM())
 
         empty = ''
         for i in xrange(self.calWidth):
@@ -470,23 +476,27 @@ class GoogleCalendar:
         dayNames = [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday',
                      'Thursday', 'Friday', 'Saturday' ]
 
-        dayHeader = '|'
+        dayHeader = str(self.borderColor) + '|' + str(CLR_NRM())
         for i in xrange(7):
             if self.calMonday:
                 if i == 6:
-                    dayHeader += dayFormat % (dayNames[0])
+                    dayName = dayFormat % (dayNames[0])
                 else:
-                    dayHeader += dayFormat % (dayNames[i+1])
+                    dayName = dayFormat % (dayNames[i+1])
             else:
-                dayHeader += dayFormat % (dayNames[i])
-            dayHeader += '|'
+                dayName = dayFormat % (dayNames[i])
+            dayHeader += str(self.dateColor) + dayName + str(CLR_NRM())
+            dayHeader += str(self.borderColor) + '|' + str(CLR_NRM())
 
         PrintMsg(CLR_NRM(), "\n" + weekDivider + "\n")
         if (cmd == 'calm'):
             m = startDateTime.strftime('%B %Y')
             mw = str((self.calWidth * 7) + 6)
             mwf = '%-' + mw + '.' + mw + 's'
-            PrintMsg(CLR_NRM(), '|' + mwf % (m) + '|\n')
+            PrintMsg(CLR_NRM(),
+                     str(self.borderColor) + '|' + str(CLR_NRM()) + \
+                     str(self.dateColor) + mwf % (m) + str(CLR_NRM()) + \
+                     str(self.borderColor) + '|' + str(CLR_NRM()) + '\n')
             PrintMsg(CLR_NRM(), weekDivider + "\n")
         PrintMsg(CLR_NRM(), dayHeader + "\n")
         PrintMsg(CLR_NRM(), weekDivider + "\n")
@@ -503,7 +513,7 @@ class GoogleCalendar:
         for i in xrange(count):
 
             # create/print date line
-            line = "|"
+            line = str(self.borderColor) + '|' + str(CLR_NRM())
             for j in xrange(7):
                 if (cmd == 'calw'):
                     d = (startWeekDateTime +
@@ -518,9 +528,15 @@ class GoogleCalendar:
                 if (self.now.strftime("%e%b%Y") ==
                     (startWeekDateTime + timedelta(days=j)).strftime("%e%b%Y")):
                     todayMarker = " ***"
-                line += dayFormat % (d + todayMarker) + "|"
+                line += str(self.dateColor) + \
+                            dayFormat % (d + todayMarker) + \
+                        str(CLR_NRM()) + \
+                        str(self.borderColor) + \
+                            '|' + \
+                        str(CLR_NRM())
             PrintMsg(CLR_NRM(), line + "\n")
 
+            weekColorStrings = [ '', '', '', '', '', '', '' ]
             weekEventStrings = self._GetWeekEventStrings(cmd, curMonth,
                                                          startWeekDateTime,
                                                          endWeekDateTime,
@@ -533,17 +549,30 @@ class GoogleCalendar:
             while 1:
 
                 done = True
-                line = "|"
+                line = str(self.borderColor) + '|' + str(CLR_NRM())
 
                 for j in xrange(7):
 
                     if (weekEventStrings[j] == ''):
-                        line += empty + "|"
+                        weekColorStrings[j] = ''
+                        line += empty + \
+                                str(self.borderColor) + '|' + str(CLR_NRM())
                         continue
 
-                    if (weekEventStrings[j][0] == '\n'):
+                    if (weekEventStrings[j][0] == ''):
+                        # get/skip over color sequence
+                        weekColorStrings[j] = ''
+                        while (weekEventStrings[j][0] != 'm'):
+                            weekColorStrings[j] += weekEventStrings[j][0]
+                            weekEventStrings[j] = weekEventStrings[j][1:]
+                        weekColorStrings[j] += weekEventStrings[j][0]
                         weekEventStrings[j] = weekEventStrings[j][1:]
-                        line += empty + "|"
+
+                    if (weekEventStrings[j][0] == '\n'):
+                        weekColorStrings[j] = ''
+                        weekEventStrings[j] = weekEventStrings[j][1:]
+                        line += empty + \
+                                str(self.borderColor) + '|' + str(CLR_NRM())
                         done = False
                         continue
 
@@ -551,11 +580,13 @@ class GoogleCalendar:
 
                     cut = self._GetCutIndex(weekEventStrings[j], 0)
 
-                    line += dayFormat % (weekEventStrings[j][:cut])
+                    line += weekColorStrings[j] + \
+                            dayFormat % (weekEventStrings[j][:cut]) + \
+                            str(CLR_NRM())
                     weekEventStrings[j] = weekEventStrings[j][cut:]
 
                     done = False
-                    line += "|"
+                    line += str(self.borderColor) + '|' + str(CLR_NRM())
 
                 if done:
                     break
@@ -908,12 +939,13 @@ def DoooooItHippieMonster():
                                     "width=",
                                     "mon",
                                     "nc",
-                                    "date-color=",
                                     "cal-owner-color=",
                                     "cal-editor-color=",
                                     "cal-contributor-color=",
                                     "cal-read-color=",
-                                    "cal-freebusy-color="])
+                                    "cal-freebusy-color=",
+                                    "date-color=",
+                                    "border-color="])
     except getopt.error:
         Usage()
 
@@ -942,6 +974,7 @@ def DoooooItHippieMonster():
     calReadColor        = GetColor(GetConfig(cfg, 'cal-read-color', 'magenta'))
     calFreeBusyColor    = GetColor(GetConfig(cfg, 'cal-freebusy-color', 'default'))
     dateColor           = GetColor(GetConfig(cfg, 'date-color', 'yellow'))
+    borderColor         = GetColor(GetConfig(cfg, 'border-color', 'white'))
 
     # fix wokCalNames when not specified in config file
     if ((len(workCalNames) == 1) and (workCalNames[0] == None)):
@@ -965,6 +998,7 @@ def DoooooItHippieMonster():
         elif (opt == "--cal-read-color"): calReadColor = GetColor(arg)
         elif (opt == "--cal-freebusy-color"): calFreeBusyColor = GetColor(arg)
         elif (opt == "--date-color"): dateColor = GetColor(arg)
+        elif (opt == "--border-color"): borderColor = GetColor(arg)
 
     if ((usr == '') or (pwd == '')):
         PrintErrMsg('\nError: must specify username and password\n')
@@ -987,7 +1021,8 @@ def DoooooItHippieMonster():
                           calContributorColor=calContributorColor,
                           calReadColor=calReadColor,
                           calFreeBusyColor=calFreeBusyColor,
-                          dateColor=dateColor)
+                          dateColor=dateColor,
+                          borderColor=borderColor)
 
     if (args[0] == 'list'):
         gcal.ListAllCalendars()
