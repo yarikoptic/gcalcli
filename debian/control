@@ -1,0 +1,20 @@
+Source: gcalcli
+Section: utils
+Priority: extra
+Maintainer: Brandon Philips <brandon@ifup.org>
+Uploaders: Python Applications Packaging Team <python-apps-team@lists.alioth.debian.org>
+Homepage: http://code.google.com/p/gcalcli/
+Vcs-Svn: svn://svn.debian.org/python-apps/packages/gcalcli/trunk
+Vcs-Browser: http://svn.debian.org/wsvn/python-apps/packages/gcalcli/?op=log
+Build-Depends: debhelper (>= 5)
+Standards-Version: 3.7.2
+
+Package: gcalcli
+Architecture: all
+Depends: python, python-gdata (>= 1.0.7), python-dateutil
+Recommends: gmessage
+Description: Google Calendar Command Line Interface
+ gcalcli is a Python application that allows you to access your Google
+ Calendar from a command line. It's easy to get your agenda, search for
+ events, and quickly add new events. Additionally gcalcli can be used as
+ a reminder service to execute any application you want.
