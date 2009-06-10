@@ -11,7 +11,7 @@ Standards-Version: 3.8.1
 Package: gcalcli
 Architecture: all
 Depends: python, python-gdata (>= 1.0.7), python-dateutil
-Recommends: gmessage
+Recommends: gxmessage
 Description: Google Calendar Command Line Interface
  gcalcli is a Python application that allows you to access your Google
  Calendar from a command line. It's easy to get your agenda, search for
