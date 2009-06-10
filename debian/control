@@ -1,13 +1,12 @@
 Source: gcalcli
 Section: utils
-Priority: extra
-Maintainer: Brandon Philips <brandon@ifup.org>
-Uploaders: Python Applications Packaging Team <python-apps-team@lists.alioth.debian.org>
+Priority: optional
+Maintainer: Yaroslav Halchenko <debian@onerussian.com>
 Homepage: http://code.google.com/p/gcalcli/
-Vcs-Svn: svn://svn.debian.org/python-apps/packages/gcalcli/trunk
-Vcs-Browser: http://svn.debian.org/wsvn/python-apps/packages/gcalcli/?op=log
+Vcs-git: git://git.onerussian.com/deb/gcalcli
+Vcs-Browser: http://git.onerussian.com/?p=deb/gcalcli.git
 Build-Depends: debhelper (>= 5)
-Standards-Version: 3.7.2
+Standards-Version: 3.8.1
 
 Package: gcalcli
 Architecture: all

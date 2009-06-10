@@ -5,6 +5,10 @@ gcalcli (1.4-2) UNRELEASED; urgency=low
     - added missing file
 
   [ Yaroslav Halchenko ]
+  * New maintainer (Maintainer and Uploaders fields got adjusted)
+  * Priority switched to optional from extra
+  * Vcs- fields adjusted (now storing packaging and upstream within git)
+  * Policy complience version boosted to 3.8.0 (no changes necessary)
   * BF: adopted patch from http://www.freebsd.org/cgi/query- pr.cgi?pr=125327
     to handle unicode  (Closes: #504812)
 
