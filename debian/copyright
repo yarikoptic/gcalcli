@@ -1,13 +1,14 @@
-This package was debianized by Brandon Philips <brandon@ifup.org> on
-Mon, 12 Nov 2007 20:56:50 -0800.
+This package was originally debianized by Brandon Philips
+<brandon@ifup.org> on Mon, 12 Nov 2007 20:56:50 -0800.  Package was
+picked up by Yaroslav Halchenko as of 1.4-2 revision.
 
 It was downloaded from <http://code.google.com/p/gcalcli/>
 
-Upstream Author: 
+Upstream Author:
 
     Eric Davis <insanum@gmail.com>
 
-Copyright: 
+Copyright:
 
     <Copyright (C) 2007 Eric Davis>
 
@@ -34,5 +35,7 @@ License:
  SOFTWARE.
 
 
-The Debian packaging is (C) 2007, Brandon Philips <brandon@ifup.org> and
-is licensed under the GPL, see `/usr/share/common-licenses/GPL'.
+The Debian packaging is
+ Copyright (C) 2007, Brandon Philips <brandon@ifup.org>
+ Copyright (C) 2009, Yaroslav Halchenko <debian@onerussian.com>
+and is licensed under the GPL, see `/usr/share/common-licenses/GPL'.

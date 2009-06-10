@@ -1,4 +1,4 @@
-gcalcli (1.4-2) UNRELEASED; urgency=low
+gcalcli (1.4-2~pre1) UNRELEASED; urgency=low
 
   [ Sandro Tosi ]
   * debian/watch
@@ -9,6 +9,7 @@ gcalcli (1.4-2) UNRELEASED; urgency=low
   * Priority switched to optional from extra
   * Vcs- fields adjusted (now storing packaging and upstream within git)
   * Policy complience version boosted to 3.8.0 (no changes necessary)
+  * Updated a debian/copyright file
   * BF: adopted patch from http://www.freebsd.org/cgi/query- pr.cgi?pr=125327
     to handle unicode  (Closes: #504812)
 
