@@ -1,4 +1,4 @@
-gcalcli (1.4-2~pre1) UNRELEASED; urgency=low
+gcalcli (1.4-2) unstable; urgency=low
 
   [ Sandro Tosi ]
   * debian/watch
