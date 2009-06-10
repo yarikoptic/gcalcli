@@ -4,7 +4,11 @@ gcalcli (1.4-2) UNRELEASED; urgency=low
   * debian/watch
     - added missing file
 
- -- Yaroslav Halchenko <debian@onerussian.com>  Tue, 09 Jun 2009 17:00:32 -0400
+  [ Yaroslav Halchenko ]
+  * BF: adopted patch from http://www.freebsd.org/cgi/query- pr.cgi?pr=125327
+    to handle unicode  (Closes: #504812)
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Wed, 10 Jun 2009 13:58:10 -0400
 
 gcalcli (1.4-1) unstable; urgency=low
 
