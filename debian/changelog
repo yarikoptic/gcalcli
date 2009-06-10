@@ -12,6 +12,8 @@ gcalcli (1.4-2~pre1) UNRELEASED; urgency=low
   * Updated a debian/copyright file
   * BF: adopted patch from http://www.freebsd.org/cgi/query- pr.cgi?pr=125327
     to handle unicode  (Closes: #504812)
+  * BF: adjusted man page to don't point to non-existing documentation,
+	and rather point to Wiki page (Closes: #462485)
 
  -- Yaroslav Halchenko <debian@onerussian.com>  Wed, 10 Jun 2009 13:58:10 -0400
 
