@@ -251,6 +251,7 @@ class GoogleCalendar:
     ACCESS_CONTRIBUTOR = 'contributor'
     ACCESS_READ        = 'read'
     ACCESS_FREEBUSY    = 'freebusy'
+    ACCESS_ROOT        = 'root'
 
 
     def __init__(self,
@@ -303,15 +304,22 @@ class GoogleCalendar:
         self.allCals = self.gcal.GetAllCalendarsFeed()
 
         order = { self.ACCESS_OWNER       : 1,
+                  self.ACCESS_ROOT        : 1.5,
                   self.ACCESS_EDITOR      : 2,
                   self.ACCESS_CONTRIBUTOR : 3,
                   self.ACCESS_READ        : 4,
                   self.ACCESS_FREEBUSY    : 5,
                   self.ACCESS_NONE        : 6 }
 
+        def order_resistant(k):
+            """Helper which would not puke but order last entries with
+            unknown keys
+            """
+            return order.get(k, order[self.ACCESS_NONE]+1)
+
         self.allCals.entry.sort(lambda x, y:
-                                cmp(order[x.access_level.value],
-                                    order[y.access_level.value]))
+                                cmp(order_resistant(x.access_level.value),
+                                    order_resistant(y.access_level.value)))
 
         for cal in self.allCals.entry:
 
