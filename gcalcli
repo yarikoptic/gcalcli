@@ -251,6 +251,7 @@ class GoogleCalendar:
     ACCESS_CONTRIBUTOR = 'contributor'
     ACCESS_READ        = 'read'
     ACCESS_FREEBUSY    = 'freebusy'
+    ACCESS_ROOT        = 'root'
 
 
     def __init__(self,
@@ -303,6 +304,7 @@ class GoogleCalendar:
         self.allCals = self.gcal.GetAllCalendarsFeed()
 
         order = { self.ACCESS_OWNER       : 1,
+                  self.ACCESS_ROOT        : 1.5,
                   self.ACCESS_EDITOR      : 2,
                   self.ACCESS_CONTRIBUTOR : 3,
                   self.ACCESS_READ        : 4,
