@@ -1,3 +1,11 @@
+gcalcli (1.4-3) unstable; urgency=low
+
+  * BF: fix absent ordering about "root" calendars (Closes: #575086)
+  * ENH: Making sorting of calendars error resistant by placing unknown
+    keys last. Thanks Bill Gatliff for suggestion
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Tue, 23 Mar 2010 12:40:09 -0400
+
 gcalcli (1.4-2) unstable; urgency=low
 
   [ Sandro Tosi ]
