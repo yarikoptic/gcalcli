@@ -1,6 +1,6 @@
 Source: gcalcli
 Section: utils
-Priority: optional
+Priority: extra
 Maintainer: Yaroslav Halchenko <debian@onerussian.com>
 Homepage: http://code.google.com/p/gcalcli/
 Vcs-git: git://git.onerussian.com/deb/gcalcli
