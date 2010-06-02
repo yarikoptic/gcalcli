@@ -155,8 +155,23 @@ event start time and title text)
 Wiki page
 .UE
 
+.SH FILES
+.TP
+.I ~/.gcalcli
+If exists is consulted at startup for defaults.
+Formatted with a section header "gcalcli" followed by lines
+\fBoption: value\fR.  (See section OPTIONS above for list of valid
+options.)  E.g.,
+
+.nf
+[gcalcli]
+user: bertie_ahern
+pw: topsecret
+cal: Irish Holidays
+
+.fi
 .SH AUTHOR
-Brandon Philips, Yaroslav Halchenko
+Brandon Philips, Yaroslav Halchenko, Barak A. Pearlmutter
 
 .SH COPYRIGHT
 Copyright \(co 2007 Brandon Philips <brandon@ifup.org>
