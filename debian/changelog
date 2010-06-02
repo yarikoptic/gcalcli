@@ -1,3 +1,12 @@
+gcalcli (1.4-4) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Adjust 'feedPrefix' URL to 'https?://www.google.com/calendar/feeds/'
+    fixing failure of gcalcli on all operations with AttributeError
+    (Closes: #582247).
+
+ -- Salvatore Bonaccorso <salvatore.bonaccorso@gmail.com>  Wed, 02 Jun 2010 07:34:32 +0200
+
 gcalcli (1.4-3) unstable; urgency=low
 
   * BF: fix absent ordering about "root" calendars (Closes: #575086)

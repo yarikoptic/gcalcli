@@ -223,7 +223,7 @@ class GoogleCalendar:
     allCals       = None
     workCals      = []
     now           = datetime.now(tzlocal())
-    feedPrefix    = 'http://www.google.com/calendar/feeds/'
+    feedPrefix    = 'https?://www.google.com/calendar/feeds/'
     agendaLength  = 5
     username      = ''
     password      = ''
