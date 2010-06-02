@@ -1,7 +1,8 @@
 gcalcli (1.4-5) unstable; urgency=low
 
   * Moved into section extra (depends on python-gdata from extra), and
-    Archive Administrator complained.
+    Archive Administrator complained
+  * Added misc:Depends into Depends
 
  -- Yaroslav Halchenko <debian@onerussian.com>  Wed, 02 Jun 2010 09:55:51 -0400
 
