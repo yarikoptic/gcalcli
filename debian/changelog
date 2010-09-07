@@ -1,3 +1,10 @@
+gcalcli (1.4-6) unstable; urgency=low
+
+  * Fixing path to config file in manpage. Thanks Premysl Hruby (Closes:
+    #595936)
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Tue, 07 Sep 2010 09:22:36 -0400
+
 gcalcli (1.4-5) unstable; urgency=low
 
   * Moved into section extra (depends on python-gdata from extra), and
