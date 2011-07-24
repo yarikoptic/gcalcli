@@ -222,6 +222,15 @@ def DebugPrint(msg):
     sys.stdout.write(str(CLR_NRM()))
 
 
+def Dump2038(event):
+    d1 = parse(event.when[0].start_time);
+    d2 = parse(event.when[0].end_time);
+    if ((d1.year >= 2038) or (d2.year >= 2038)):
+        return False
+    else:
+        return True
+
+
 class GoogleCalendar:
 
     gcal          = None
@@ -729,6 +738,13 @@ class GoogleCalendar:
 
             eventList.extend(self._GetAllEvents(cal, feed))
 
+        # http://en.wikipedia.org/wiki/Year_2038_problem
+        # Catch the year 2038 problem here as the python dateutil module
+        # can choke throwing a ValueError exception. For a workaround I'm
+        # walking the list of entries and parsing both the start and end
+        # dates. If either has a year '>= 2038' I'm dumping the entry. XXX
+        eventList = filter(lambda x: Dump2038(x), eventList)
+
         eventList.sort(lambda x, y:
                        cmp(parse(x.when[0].start_time,
                                  default=defaultDateTime).astimezone(tzlocal()),
@@ -764,9 +780,12 @@ class GoogleCalendar:
         if (searchText == ''):
             return
 
-        eventList = self._SearchForCalEvents(None, None, self.now, searchText)
+        # convert now to midnight this morning and use for default
+        today = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        self._PrintEvents(self.now, self.now, eventList)
+        eventList = self._SearchForCalEvents(None, None, today, searchText)
+
+        self._PrintEvents(today, self.now, eventList)
 
 
     def AgendaQuery(self, startText='', endText=''):
