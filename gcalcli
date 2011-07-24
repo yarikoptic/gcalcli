@@ -54,7 +54,8 @@ __author__  = 'Insanum'
 
 import inspect
 
-import sys, os, re, urllib, getopt, shlex, codecs, locale, csv
+import sys, os, re, urllib, getopt, shlex, codecs, locale, csv, threading
+from Queue import Queue
 from ConfigParser import SafeConfigParser
 from gdata.calendar.service import *
 from datetime import *
@@ -718,6 +719,13 @@ class GoogleCalendar:
 
         eventList = []
 
+        queue = Queue()
+        threads = []
+
+        def worker(cal, query):
+            feed = self.gcal.CalendarQuery(query)
+            queue.put((cal, feed))
+
         for cal in self.workCals:
 
             if not self._CalendarWithinAccess(cal):
@@ -739,8 +747,16 @@ class GoogleCalendar:
             # we sort later after getting events from all calendars
             #query.orderby = 'starttime'
             #query.sortorder = 'ascending'
-            feed = self.gcal.CalendarQuery(query)
 
+            th = threading.Thread(target=worker, args=(cal, query))
+            threads.append(th)
+            th.start()
+
+        for th in threads:
+            th.join()
+
+        while not queue.empty():
+            cal, feed = queue.get()
             eventList.extend(self._GetAllEvents(cal, feed))
 
         # http://en.wikipedia.org/wiki/Year_2038_problem
