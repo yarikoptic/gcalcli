@@ -291,6 +291,7 @@ class GoogleCalendar:
         self.gcal          = CalendarService()
         self.username      = username
         self.password      = password
+        self.https         = https
 
         if (https): self.feedPrefix = 'https://'
         else:       self.feedPrefix = 'http://'
@@ -343,6 +344,11 @@ class GoogleCalendar:
         for cal in self.allCals.entry:
 
             cal.gcalcli_altLink = cal.GetAlternateLink().href
+
+            if ((self.https == False) and (cal.gcalcli_altLink[0:5] == "https")):
+                PrintErrMsg("Error: Unable to connect, https required!\n")
+                sys.exit(1)
+
             match = re.match('^' + self.feedPrefix + '(.*?)/(.*?)/(.*)$',
                              cal.gcalcli_altLink)
             cal.gcalcli_username    = urllib.unquote(match.group(1))
@@ -355,7 +361,6 @@ class GoogleCalendar:
                         self.workCals.append(cal)
             else:
                 self.workCals.append(cal)
-
 
 
     def _CalendarWithinAccess(self, cal):
