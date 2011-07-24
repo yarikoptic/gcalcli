@@ -54,8 +54,8 @@ __author__  = 'Insanum'
 
 import inspect
 
-import sys, os, re, urllib, getopt, shlex, codecs, locale
-from ConfigParser import ConfigParser
+import sys, os, re, urllib, getopt, shlex, codecs, locale, csv
+from ConfigParser import SafeConfigParser
 from gdata.calendar.service import *
 from datetime import *
 from dateutil.tz import *
@@ -94,10 +94,13 @@ gcalcli [options] command [command args]
           freebusy]        - freebusy (only free/busy info visible)
 
   --cal <name>             'calendar' to work with (default is all calendars)
-                           - you can specify a calendar by name or by using a
-                             regular expression to match multiple calendars
+                           - you can specify a calendar by name or by substring
+                             which can match multiple calendars
                            - you can use multiple '--cal' arguments on the
                              command line
+                           - in the config file specify multiple calendars in
+                             quotes separated by commas as:
+                               cal: "foo", "bar", "etc"
 
   --details                show all event details (i.e. length, location,
                            reminders, contents)
@@ -892,7 +895,7 @@ class GoogleCalendar:
 
 def LoadConfig(configFile):
 
-    config = ConfigParser()
+    config = SafeConfigParser()
     config.read(os.path.expanduser(configFile))
     return config
 
@@ -904,6 +907,23 @@ def GetConfig(config, key, default):
     except:
         value = default
 
+    return value
+
+
+def GetConfigMultiple(config, key, default):
+
+    try:
+        cals = config.get('gcalcli', key)
+    except:
+        cals = default
+
+    if (cals == None):
+        return [ None ]
+
+    value = csv.reader([ cals ],
+                       delimiter=',',
+                       quotechar='"',
+                       skipinitialspace=True).next()
     return value
 
 
@@ -978,7 +998,7 @@ def BowChickaWowWow():
     pwd           = GetConfig(cfg, 'pw', __password__)
     https         = GetTrueFalse(GetConfig(cfg, 'https', 'false'))
     access        = GetConfig(cfg, 'cals', 'all')
-    workCalNames  = [ GetConfig(cfg, 'cal', None) ]
+    workCalNames  = GetConfigMultiple(cfg, 'cal', None)
     details       = GetTrueFalse(GetConfig(cfg, 'details', 'false'))
     ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
     calWidth      = int(GetConfig(cfg, 'width', '10'))
