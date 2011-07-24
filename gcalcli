@@ -320,8 +320,8 @@ class GoogleCalendar:
                             password=self.password,
                             service='cl',
                             source=__author__+'-'+__program__+'-'+__version__)
-        except:
-            PrintErrMsg("Error: Failed to authenticate with Google Calendar!\n")
+        except Exception, e:
+            PrintErrMsg("Error: " + str(e) + "!\n")
             sys.exit(1)
 
         # get the list of calendars
