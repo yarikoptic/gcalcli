@@ -45,16 +45,14 @@
 #  - man page anyone?
 #
 
-__username__ = '<username>@gmail.com'
-__password__ = '<password>'
-
 __program__ = 'gcalcli'
 __version__ = 'v1.4'
 __author__  = 'Insanum'
 
 import inspect
 
-import sys, os, re, urllib, getopt, shlex, codecs, locale, csv, threading
+import sys, os, re, urllib, getopt, shlex
+import codecs, locale, csv, threading, getpass
 from Queue import Queue
 from ConfigParser import SafeConfigParser
 from gdata.calendar.service import *
@@ -231,8 +229,8 @@ class GoogleCalendar:
     now           = datetime.now(tzlocal())
     feedPrefix    = None
     agendaLength  = 5
-    username      = ''
-    password      = ''
+    username      = None
+    password      = None
     access        = ''
     workCalNames  = []
     details       = False
@@ -263,8 +261,8 @@ class GoogleCalendar:
 
 
     def __init__(self,
-                 username='',
-                 password='',
+                 username=None,
+                 password=None,
                  https=False,
                  access='all',
                  workCalNames=[],
@@ -831,7 +829,7 @@ class GoogleCalendar:
             try:
                 start = parse(startText, default=today)
             except:
-                PrintErrMsg('\nError: failed to parse start time\n')
+                PrintErrMsg('Error: failed to parse start time\n')
                 return
 
         if (endText == ''):
@@ -840,7 +838,7 @@ class GoogleCalendar:
             try:
                 end = parse(endText, default=today)
             except:
-                PrintErrMsg('\nError: failed to parse end time\n')
+                PrintErrMsg('Error: failed to parse end time\n')
                 return
 
         eventList = self._SearchForCalEvents(start, end, start, None)
@@ -860,7 +858,7 @@ class GoogleCalendar:
                 start = parse(startText, default=today)
                 start = start.replace(hour=0, minute=0, second=0, microsecond=0)
             except:
-                PrintErrMsg('\nError: failed to parse start time\n')
+                PrintErrMsg('Error: failed to parse start time\n')
                 return
 
         # convert start date to the beginning of the week or month
@@ -1008,7 +1006,7 @@ def GetColor(value):
     try:
         return colors[value]
     except:
-        PrintErrMsg('\nError: invalid color name\n')
+        PrintErrMsg('Error: invalid color name\n')
         Usage()
 
 
@@ -1046,8 +1044,8 @@ def BowChickaWowWow():
 
     cfg = LoadConfig(configFile)
 
-    usr           = GetConfig(cfg, 'user', __username__)
-    pwd           = GetConfig(cfg, 'pw', __password__)
+    usr           = GetConfig(cfg, 'user', None)
+    pwd           = GetConfig(cfg, 'pw', None)
     https         = GetTrueFalse(GetConfig(cfg, 'https', 'false'))
     access        = GetConfig(cfg, 'cals', 'all')
     workCalNames  = GetConfigMultiple(cfg, 'cal', None)
@@ -1090,13 +1088,24 @@ def BowChickaWowWow():
         elif (opt == "--date-color"): dateColor = GetColor(arg)
         elif (opt == "--border-color"): borderColor = GetColor(arg)
 
-    if ((usr == '') or (pwd == '')):
-        PrintErrMsg('\nError: must specify username and password\n')
-        Usage()
+    if (usr == None):
+        PrintErrMsg('Error: must specify a username\n')
+        sys.exit(1)
+
+    try:
+        if (pwd == None):
+            pwd = getpass.getpass("Password: ")
+    except Exception, e:
+        PrintErrMsg("Error: " + str(e) + "!\n")
+        sys.exit(1)
+
+    if ((pwd == None) or (pwd == '')):
+        PrintErrMsg('Error: must specify a password\n')
+        sys.exit(1)
 
     if (len(args) == 0):
-        PrintErrMsg('\nError: no command\n')
-        Usage()
+        PrintErrMsg('Error: no command\n')
+        sys.exit(1)
 
     gcal = GoogleCalendar(username=usr,
                           password=pwd,
@@ -1120,7 +1129,7 @@ def BowChickaWowWow():
 
     elif (args[0] == 'search'):
         if (len(args) != 2):
-            PrintErrMsg('\nError: invalid search string\n')
+            PrintErrMsg('Error: invalid search string\n')
             Usage()
         # allow unicode strings for input
         uniArg = unicode(args[1], locale.getpreferredencoding())
@@ -1134,19 +1143,19 @@ def BowChickaWowWow():
         elif (len(args) == 1): # defaults
             gcal.AgendaQuery()
         else:
-            PrintErrMsg('\nError: invalid agenda arguments\n')
+            PrintErrMsg('Error: invalid agenda arguments\n')
             Usage()
 
     elif (args[0] == 'calw'):
         if not calWidth:
-            PrintErrMsg('\nError: invalid width, don\'t be an idiot!\n')
+            PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
             Usage()
 
         if (len(args) >= 2):
             try:
                 count = int(args[1])
             except:
-                PrintErrMsg('\nError: invalid calw arguments\n')
+                PrintErrMsg('Error: invalid calw arguments\n')
                 Usage()
 
         if (len(args) == 3):   # weeks and start
@@ -1156,12 +1165,12 @@ def BowChickaWowWow():
         elif (len(args) == 1): # defaults
             gcal.CalQuery(args[0])
         else:
-            PrintErrMsg('\nError: invalid calw arguments\n')
+            PrintErrMsg('Error: invalid calw arguments\n')
             Usage()
 
     elif (args[0] == 'calm'):
         if not calWidth:
-            PrintErrMsg('\nError: invalid width, don\'t be an idiot!\n')
+            PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
             Usage()
 
         if (len(args) == 2): # start
@@ -1169,12 +1178,12 @@ def BowChickaWowWow():
         elif (len(args) == 1): # defaults
             gcal.CalQuery(args[0])
         else:
-            PrintErrMsg('\nError: invalid calm arguments\n')
+            PrintErrMsg('Error: invalid calm arguments\n')
             Usage()
 
     elif (args[0] == 'quick'):
         if (len(args) != 2):
-            PrintErrMsg('\nError: invalid event text\n')
+            PrintErrMsg('Error: invalid event text\n')
             Usage()
 
         # allow unicode strings for input
@@ -1190,12 +1199,12 @@ def BowChickaWowWow():
         elif (len(args) == 1): # defaults
             gcal.Remind()
         else:
-            PrintErrMsg('\nError: invalid remind arguments\n')
+            PrintErrMsg('Error: invalid remind arguments\n')
             Usage()
         return
 
     else:
-        PrintErrMsg('\nError: unknown command\n')
+        PrintErrMsg('Error: unknown command\n')
         Usage()
 
     sys.stdout.write('\n')
