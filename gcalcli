@@ -223,15 +223,6 @@ def DebugPrint(msg):
     sys.stdout.write(str(CLR_NRM()))
 
 
-def Dump2038(event):
-    d1 = parse(event.when[0].start_time);
-    d2 = parse(event.when[0].end_time);
-    if ((d1.year >= 2038) or (d2.year >= 2038)):
-        return False
-    else:
-        return True
-
-
 class GoogleCalendar:
 
     gcal          = None
@@ -400,6 +391,22 @@ class GoogleCalendar:
             return CLR_NRM()
 
 
+    def _ValidTitle(self, title):
+        if (title == None):
+            return "(No title)"
+        else:
+            return title
+
+
+    def _Dump2038(self, event):
+        d1 = parse(event.when[0].start_time);
+        d2 = parse(event.when[0].end_time);
+        if ((d1.year >= 2038) or (d2.year >= 2038)):
+            return False
+        else:
+            return True
+
+
     def _GetWeekEventStrings(self, cmd, curMonth,
                              startDateTime, endDateTime, eventList):
 
@@ -422,11 +429,14 @@ class GoogleCalendar:
 
                 meridiem = eventStartDateTime.strftime('%p').lower()
                 tmpTimeStr = eventStartDateTime.strftime("%l:%M") + meridiem
+
                 # newline and empty string are the keys to turn off coloring
                 weekEventStrings[dayNum] += \
                     "\n" + \
                     str(self._CalendarColor(event.gcalcli_cal)) + \
-                    tmpTimeStr.strip() + " " + event.title.text.strip()
+                    tmpTimeStr.strip() + \
+                    " " + \
+                    self._ValidTitle(event.title.text).strip()
 
         return weekEventStrings
 
@@ -656,7 +666,8 @@ class GoogleCalendar:
             if (tmpDayStr != day): day = prefix = tmpDayStr
             PrintMsg(self.dateColor, prefix)
             PrintMsg(self._CalendarColor(event.gcalcli_cal),
-                     '  %-7s  %s\n' % (tmpTimeStr, event.title.text))
+                     '  %-7s  %s\n' % \
+                     (tmpTimeStr, self._ValidTitle(event.title.text).strip()))
 
             if self.details:
 
@@ -764,7 +775,7 @@ class GoogleCalendar:
         # can choke throwing a ValueError exception. For a workaround I'm
         # walking the list of entries and parsing both the start and end
         # dates. If either has a year '>= 2038' I'm dumping the entry. XXX
-        eventList = filter(lambda x: Dump2038(x), eventList)
+        eventList = filter(lambda x: self._Dump2038(x), eventList)
 
         eventList.sort(lambda x, y:
                        cmp(parse(x.when[0].start_time,
@@ -915,7 +926,8 @@ class GoogleCalendar:
 
             meridiem = eventStartDateTime.strftime('%p').lower()
             tmpTimeStr = eventStartDateTime.strftime('%l:%M') + meridiem
-            message += '%s  %s\n' % (tmpTimeStr, event.title.text)
+            message += '%s  %s\n' % \
+                       (tmpTimeStr, self._ValidTitle(event.title.text).strip())
 
         if (message == ''):
             return
