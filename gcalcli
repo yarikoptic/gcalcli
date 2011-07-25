@@ -115,7 +115,7 @@ gcalcli [options] command [command args]
                              events
 
   --width                  the number of characters to use for each column in
-                           the 'cal' command output (default is 10)
+                           the 'calw' and 'calm' command output (default is 10)
 
   --nc                     don't use colors
 
@@ -179,23 +179,23 @@ class CLR:
         if self.useColor: return self.color
         else: return ""
 
-class CLR_NRM(CLR):   color = "[0m"
-class CLR_BLK(CLR):   color = "[0;30m"
-class CLR_BRBLK(CLR): color = "[30;1m"
-class CLR_RED(CLR):   color = "[0;31m"
-class CLR_BRRED(CLR): color = "[31;1m"
-class CLR_GRN(CLR):   color = "[0;32m"
-class CLR_BRGRN(CLR): color = "[32;1m"
-class CLR_YLW(CLR):   color = "[0;33m"
-class CLR_BRYLW(CLR): color = "[33;1m"
-class CLR_BLU(CLR):   color = "[0;34m"
-class CLR_BRBLU(CLR): color = "[34;1m"
-class CLR_MAG(CLR):   color = "[0;35m"
-class CLR_BRMAG(CLR): color = "[35;1m"
-class CLR_CYN(CLR):   color = "[0;36m"
-class CLR_BRCYN(CLR): color = "[36;1m"
-class CLR_WHT(CLR):   color = "[0;37m"
-class CLR_BRWHT(CLR): color = "[37;1m"
+class CLR_NRM(CLR):   color = "\033[0m"
+class CLR_BLK(CLR):   color = "\033[0;30m"
+class CLR_BRBLK(CLR): color = "\033[30;1m"
+class CLR_RED(CLR):   color = "\033[0;31m"
+class CLR_BRRED(CLR): color = "\033[31;1m"
+class CLR_GRN(CLR):   color = "\033[0;32m"
+class CLR_BRGRN(CLR): color = "\033[32;1m"
+class CLR_YLW(CLR):   color = "\033[0;33m"
+class CLR_BRYLW(CLR): color = "\033[33;1m"
+class CLR_BLU(CLR):   color = "\033[0;34m"
+class CLR_BRBLU(CLR): color = "\033[34;1m"
+class CLR_MAG(CLR):   color = "\033[0;35m"
+class CLR_BRMAG(CLR): color = "\033[35;1m"
+class CLR_CYN(CLR):   color = "\033[0;36m"
+class CLR_BRCYN(CLR): color = "\033[36;1m"
+class CLR_WHT(CLR):   color = "\033[0;37m"
+class CLR_BRWHT(CLR): color = "\033[37;1m"
 
 
 def PrintErrMsg(msg):
@@ -592,7 +592,7 @@ class GoogleCalendar:
                                 str(self.borderColor) + '|' + str(CLR_NRM())
                         continue
 
-                    if (weekEventStrings[j][0] == ''):
+                    if (weekEventStrings[j][0] == '\033'):
                         # get/skip over color sequence
                         weekColorStrings[j] = ''
                         while (weekEventStrings[j][0] != 'm'):
