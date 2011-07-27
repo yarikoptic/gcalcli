@@ -423,7 +423,7 @@ class GoogleCalendar:
             dayNum = int(eventStartDateTime.strftime("%w"))
 
             if ((eventStartDateTime >= startDateTime) and
-                (eventStartDateTime <= endDateTime)):
+                (eventStartDateTime < endDateTime)):
 
                 meridiem = eventStartDateTime.strftime('%p').lower()
                 tmpTimeStr = eventStartDateTime.strftime("%l:%M") + meridiem
