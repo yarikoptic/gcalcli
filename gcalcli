@@ -670,7 +670,7 @@ class GoogleCalendar:
             if (self.ignoreStarted and (eventStartDateTime < startDateTime)):
                 continue
 
-            tmpDayStr  = eventStartDateTime.strftime(dayFormat)
+            tmpDayStr = eventStartDateTime.strftime(dayFormat)
             meridiem = eventStartDateTime.strftime('%p').lower()
             tmpTimeStr = eventStartDateTime.strftime(timeFormat) + meridiem
             prefix = indent
@@ -765,6 +765,10 @@ class GoogleCalendar:
                                            cal.gcalcli_visibility,
                                            cal.gcalcli_projection,
                                            searchText)
+                if start: # flagged by --ignore-started
+                    # weeds out old but still pulls in started events
+                    query.futureevents = 'true'
+
             query.singleevents = 'true'
 
             # we sort later after getting events from all calendars
@@ -822,18 +826,29 @@ class GoogleCalendar:
         if (searchText == ''):
             return
 
+        if self.ignoreStarted:
+            start = self.now # flags gdata futureevents to true
+        else:
+            start = None
+
         # convert now to midnight this morning and use for default
         today = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        eventList = self._SearchForCalEvents(None, None, today, searchText)
+        eventList = self._SearchForCalEvents(start, None, today, searchText)
 
         self._PrintEvents(today, self.now, eventList)
 
 
     def AgendaQuery(self, startText='', endText=''):
 
-        # convert now to midnight this morning and use for default
-        today = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
+        if self.ignoreStarted:
+            today = self.now
+        else:
+            # convert now to midnight this morning and use for default
+            today = self.now.replace(hour=0,
+                                     minute=0,
+                                     second=0,
+                                     microsecond=0)
 
         if (startText == ''):
             start = today
