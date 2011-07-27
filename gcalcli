@@ -396,13 +396,26 @@ class GoogleCalendar:
             return title
 
 
-    def _Dump2038(self, event):
-        d1 = parse(event.when[0].start_time);
-        d2 = parse(event.when[0].end_time);
-        if ((d1.year >= 2038) or (d2.year >= 2038)):
+    def _FilterOnEventDates(self, event, end, defaultDateTime):
+        s = parse(event.when[0].start_time,
+                  default=defaultDateTime).astimezone(tzlocal())
+        e = parse(event.when[0].end_time,
+                  default=defaultDateTime).astimezone(tzlocal())
+
+        # For all-day events, Google seems to assume that the event time
+        # is based in the UTZ instead of the local timezone.  Here we filter
+        # out those events start beyond a specified end time.
+        if end and (s >= end):
             return False
-        else:
-            return True
+
+        # http://en.wikipedia.org/wiki/Year_2038_problem
+        # Catch the year 2038 problem here as the python dateutil module
+        # can choke throwing a ValueError exception. If either the start
+        # or end time for an event has a year '>= 2038' dump it.
+        if ((s.year >= 2038) or (e.year >= 2038)):
+            return False
+
+        return True
 
 
     def _GetWeekEventStrings(self, cmd, curMonth,
@@ -753,6 +766,7 @@ class GoogleCalendar:
                                            cal.gcalcli_projection,
                                            searchText)
             query.singleevents = 'true'
+
             # we sort later after getting events from all calendars
             #query.orderby = 'starttime'
             #query.sortorder = 'ascending'
@@ -768,12 +782,10 @@ class GoogleCalendar:
             cal, feed = queue.get()
             eventList.extend(self._GetAllEvents(cal, feed))
 
-        # http://en.wikipedia.org/wiki/Year_2038_problem
-        # Catch the year 2038 problem here as the python dateutil module
-        # can choke throwing a ValueError exception. For a workaround I'm
-        # walking the list of entries and parsing both the start and end
-        # dates. If either has a year '>= 2038' I'm dumping the entry. XXX
-        eventList = filter(lambda x: self._Dump2038(x), eventList)
+        # XXX This eventList filter needs to be moved to the threads...
+        eventList = filter(lambda x:
+                           self._FilterOnEventDates(x, end, defaultDateTime),
+                           eventList)
 
         eventList.sort(lambda x, y:
                        cmp(parse(x.when[0].start_time,
