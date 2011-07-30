@@ -23,26 +23,24 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+#
+# Dude... just buy me a beer. :-)
+#
 
 #
 # Home: http://code.google.com/p/gcalcli
 #
-# Author: Eric Davis <insanum@gmail.com> <http://www.insanum.com>
+# Author: Eric Davis <http://www.insanum.com>
 #
 # Requirements:
-#  - Python 2 - http://www.python.org
-#  - Google's GData Python module (Python 2) - http://code.google.com/p/gdata-python-client
-#  - ElementTree Python module - http://effbot.org/zone/element-index.htm
-#  - dateutil Python module - http://www.labix.org/python-dateutil
-#
-# TODO (maybe):
-#  - import meeting.ics Outlook events ("gcalcli import <file|stdin>")
-#  - add (non-quick) events with ability to set reminders, repeat, guests, etc
-#  - configurable 'remind' reminders (i.e. 30 mins before event every 5 mins)
-#  - daemon mode for 'remind' reminders (working from cached data)
-#  - cache calendar information (serialize calendar info to file)
-#  - man page anyone?
+#  - Python 2
+#        http://www.python.org
+#  - Google's GData Python module (for Python 2)
+#        http://code.google.com/p/gdata-python-client
+#  - ElementTree Python module
+#        http://effbot.org/zone/element-index.htm
+#  - dateutil Python module
+#        http://www.labix.org/python-dateutil
 #
 
 __program__ = 'gcalcli'
@@ -100,6 +98,8 @@ gcalcli [options] command [command args]
                            - in the config file specify multiple calendars in
                              quotes separated by commas as:
                                cal: "foo", "bar", "etc"
+
+  --24hr                   show all dates in 24 hour format
 
   --details                show all event details (i.e. length, location,
                            reminders, contents)
@@ -233,6 +233,7 @@ class GoogleCalendar:
     password      = None
     access        = ''
     workCalNames  = []
+    military      = False
     details       = False
     ignoreStarted = False
     calWidth      = 10
@@ -266,6 +267,7 @@ class GoogleCalendar:
                  https=False,
                  access='all',
                  workCalNames=[],
+                 military=False,
                  details=False,
                  ignoreStarted=False,
                  calWidth=10,
@@ -289,6 +291,7 @@ class GoogleCalendar:
 
         self.access        = access
         self.workCalNames  = workCalNames
+        self.military      = military
         self.details       = details
         self.ignoreStarted = ignoreStarted
         self.calWidth      = calWidth
@@ -438,8 +441,12 @@ class GoogleCalendar:
             if ((eventStartDateTime >= startDateTime) and
                 (eventStartDateTime < endDateTime)):
 
-                meridiem = eventStartDateTime.strftime('%p').lower()
-                tmpTimeStr = eventStartDateTime.strftime("%l:%M") + meridiem
+                if self.military:
+                    tmpTimeStr = eventStartDateTime.strftime("%H:%M")
+                else:
+                    tmpTimeStr = \
+                        eventStartDateTime.strftime("%I:%M").lstrip('0') + \
+                        eventStartDateTime.strftime('%p').lower()
 
                 # newline and empty string are the keys to turn off coloring
                 weekEventStrings[dayNum] += \
@@ -526,9 +533,9 @@ class GoogleCalendar:
 
         dayFormat = '%-' + str(self.calWidth) + '.' + str(self.calWidth) + 's'
 
-        # XXX this table needs to change to use current locale (strftime %A)
-        dayNames = [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday',
-                     'Thursday', 'Friday', 'Saturday' ]
+        # Get the localized day names... January 1, 2001 was a Monday
+        dayNames = [ date(2001, 1, i+1).strftime('%A') for i in range(7) ]
+        dayNames = dayNames[6:] + dayNames[:6]
 
         dayHeader = str(self.borderColor) + '|' + str(CLR_NRM())
         for i in xrange(7):
@@ -571,16 +578,16 @@ class GoogleCalendar:
             for j in xrange(7):
                 if (cmd == 'calw'):
                     d = (startWeekDateTime +
-                         timedelta(days=j)).strftime("%e %b")
+                         timedelta(days=j)).strftime("%d %b")
                 else: # (cmd == 'calm'):
                     d = (startWeekDateTime +
-                         timedelta(days=j)).strftime("%e")
+                         timedelta(days=j)).strftime("%d")
                     if (curMonth != (startWeekDateTime +
                                      timedelta(days=j)).strftime("%b")):
                         d = ''
                 todayMarker = ''
-                if (self.now.strftime("%e%b%Y") ==
-                    (startWeekDateTime + timedelta(days=j)).strftime("%e%b%Y")):
+                if (self.now.strftime("%d%b%Y") ==
+                    (startWeekDateTime + timedelta(days=j)).strftime("%d%b%Y")):
                     todayMarker = " ***"
                 line += str(self.dateColor) + \
                             dayFormat % (d + todayMarker) + \
@@ -656,7 +663,6 @@ class GoogleCalendar:
             PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
             return
 
-        timeFormat = '%l:%M'
         dayFormat = '\n%a %b %d' # 10 chars for day
         indent = '          ' # 10 spaces
         detailsIndent = '                   '    # 19 spaces
@@ -671,13 +677,21 @@ class GoogleCalendar:
                 continue
 
             tmpDayStr = eventStartDateTime.strftime(dayFormat)
-            meridiem = eventStartDateTime.strftime('%p').lower()
-            tmpTimeStr = eventStartDateTime.strftime(timeFormat) + meridiem
+
+            if self.military:
+                timeEventFormat = '  %-5s  %s\n'
+                tmpTimeStr = eventStartDateTime.strftime("%H:%M")
+            else:
+                timeEventFormat = '  %-7s  %s\n'
+                tmpTimeStr = \
+                    eventStartDateTime.strftime("%I:%M").lstrip('0').rjust(5) + \
+                    eventStartDateTime.strftime('%p').lower()
+
             prefix = indent
             if (tmpDayStr != day): day = prefix = tmpDayStr
             PrintMsg(self.dateColor, prefix)
             PrintMsg(self._CalendarColor(event.gcalcli_cal),
-                     '  %-7s  %s\n' % \
+                     timeEventFormat % \
                      (tmpTimeStr, self._ValidTitle(event.title.text).strip()))
 
             if self.details:
@@ -949,8 +963,13 @@ class GoogleCalendar:
             if (eventStartDateTime < self.now):
                 continue
 
-            meridiem = eventStartDateTime.strftime('%p').lower()
-            tmpTimeStr = eventStartDateTime.strftime('%l:%M') + meridiem
+            if self.military:
+                tmpTimeStr = eventStartDateTime.strftime('%H:%M')
+            else:
+                tmpTimeStr = \
+                    eventStartDateTime.strftime('%I:%M').lstrip('0') + \
+                    eventStartDateTime.strftime('%p').lower()
+
             message += '%s  %s\n' % \
                        (tmpTimeStr, self._ValidTitle(event.title.text).strip())
 
@@ -1047,6 +1066,7 @@ def BowChickaWowWow():
                                     "https",
                                     "cals=",
                                     "cal=",
+                                    "24hr",
                                     "details",
                                     "ignore-started",
                                     "width=",
@@ -1076,6 +1096,7 @@ def BowChickaWowWow():
     https         = GetTrueFalse(GetConfig(cfg, 'https', 'false'))
     access        = GetConfig(cfg, 'cals', 'all')
     workCalNames  = GetConfigMultiple(cfg, 'cal', None)
+    military      = GetTrueFalse(GetConfig(cfg, '24hr', 'false'))
     details       = GetTrueFalse(GetConfig(cfg, 'details', 'false'))
     ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
     calWidth      = int(GetConfig(cfg, 'width', '10'))
@@ -1102,6 +1123,7 @@ def BowChickaWowWow():
         elif (opt == "--https"): https = True
         elif (opt == "--cals"): access = arg
         elif (opt == "--cal"): workCalNames.append(arg)
+        elif (opt == "--24hr"): military = True
         elif (opt == "--details"): details = True
         elif (opt == "--ignore-started"): ignoreStarted = True
         elif (opt == "--width"): calWidth = int(arg)
@@ -1139,6 +1161,7 @@ def BowChickaWowWow():
                           https=https,
                           access=access,
                           workCalNames=workCalNames,
+                          military=military,
                           details=details,
                           ignoreStarted=ignoreStarted,
                           calWidth=calWidth,
