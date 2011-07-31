@@ -113,7 +113,10 @@ gcalcli [options] command [command args]
                              events
 
   --width                  the number of characters to use for each column in
-                           the 'calw' and 'calm' command output (default is 10)
+                           the 'calw' and 'calm' command outputs (default is 10)
+
+  --mon                    week begins with Monday for 'calw' and 'calm' command
+                           outputs (default is Sunday)
 
   --nc                     don't use colors
 
