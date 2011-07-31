@@ -411,6 +411,10 @@ class gcalcli:
                 continue
 
             dayNum = int(event.s.strftime("%w"))
+            if self.calMonday:
+                dayNum -= 1
+                if dayNum < 0:
+                    dayNum = 6
 
             if ((event.s >= startDateTime) and
                 (event.s < endDateTime)):
@@ -540,8 +544,12 @@ class gcalcli:
 
         # get date range objects for the first week
         if (cmd == 'calm'):
-            dayNum = startDateTime.strftime("%w")
-            startDateTime = (startDateTime - timedelta(days=int(dayNum)))
+            dayNum = int(startDateTime.strftime("%w"))
+            if self.calMonday:
+                dayNum -= 1
+                if dayNum < 0:
+                    dayNum = 6
+            startDateTime = (startDateTime - timedelta(days=dayNum))
         startWeekDateTime = startDateTime
         endWeekDateTime = (startWeekDateTime + timedelta(days=7))
 
@@ -901,10 +909,14 @@ class gcalcli:
 
         # convert start date to the beginning of the week or month
         if (cmd == 'calw'):
-            dayNum = start.strftime("%w")
-            start = (start - timedelta(days=int(dayNum)))
+            dayNum = int(start.strftime("%w"))
+            if self.calMonday:
+                dayNum -= 1
+                if dayNum < 0:
+                    dayNum = 6
+            start = (start - timedelta(days=dayNum))
             end = (start + timedelta(days=(count * 7)))
-        else: # (cmd == 'calwm'):
+        else: # (cmd == 'calm'):
             start = (start - timedelta(days=(start.day - 1)))
             endMonth = (start.month + 1)
             endYear = start.year
@@ -914,6 +926,10 @@ class gcalcli:
             end = start.replace(month=endMonth, year=endYear)
             daysInMonth = (end - start).days
             offsetDays = int(start.strftime('%w'))
+            if self.calMonday:
+                offsetDays -= 1
+                if offsetDays < 0:
+                    offsetDays = 6
             totalDays = (daysInMonth + offsetDays)
             count = (totalDays / 7)
             if (totalDays % 7):
@@ -1094,8 +1110,7 @@ def BowChickaWowWow():
     details       = GetTrueFalse(GetConfig(cfg, 'details', 'false'))
     ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
     calWidth      = int(GetConfig(cfg, 'width', '10'))
-    #calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
-    calMonday     = False
+    calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
 
     calOwnerColor       = GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'))
     calEditorColor      = GetColor(GetConfig(cfg, 'cal-editor-color', 'green')) 
@@ -1121,7 +1136,7 @@ def BowChickaWowWow():
         elif (opt == "--details"): details = True
         elif (opt == "--ignore-started"): ignoreStarted = True
         elif (opt == "--width"): calWidth = int(arg)
-        elif (opt == "--mon"): Usage() #calMonday = True # not ready yet...)
+        elif (opt == "--mon"): calMonday = True
         elif (opt == "--nc"): CLR.useColor = False
         elif (opt == "--cal-owner-color"): calOwnerColor = GetColor(arg)
         elif (opt == "--cal-editor-color"): calEditorColor = GetColor(arg)
