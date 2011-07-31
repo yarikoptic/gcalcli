@@ -221,7 +221,7 @@ def DebugPrint(msg):
     sys.stdout.write(str(CLR_NRM()))
 
 
-class GoogleCalendar:
+class gcalcli:
 
     gcal          = None
     allCals       = None
@@ -399,28 +399,6 @@ class GoogleCalendar:
             return title
 
 
-    def _FilterOnEventDates(self, event, end, defaultDateTime):
-        s = parse(event.when[0].start_time,
-                  default=defaultDateTime).astimezone(tzlocal())
-        e = parse(event.when[0].end_time,
-                  default=defaultDateTime).astimezone(tzlocal())
-
-        # For all-day events, Google seems to assume that the event time
-        # is based in the UTZ instead of the local timezone.  Here we filter
-        # out those events start beyond a specified end time.
-        if end and (s >= end):
-            return False
-
-        # http://en.wikipedia.org/wiki/Year_2038_problem
-        # Catch the year 2038 problem here as the python dateutil module
-        # can choke throwing a ValueError exception. If either the start
-        # or end time for an event has a year '>= 2038' dump it.
-        if ((s.year >= 2038) or (e.year >= 2038)):
-            return False
-
-        return True
-
-
     def _GetWeekEventStrings(self, cmd, curMonth,
                              startDateTime, endDateTime, eventList):
 
@@ -428,25 +406,24 @@ class GoogleCalendar:
 
         for event in eventList:
 
-            eventStartDateTime = \
-                parse(event.when[0].start_time,
-                      default=startDateTime).astimezone(tzlocal())
-
             if ((cmd == 'calm') and
-                (curMonth != eventStartDateTime.strftime("%b"))):
+                (curMonth != event.s.strftime("%b"))):
                 continue
 
-            dayNum = int(eventStartDateTime.strftime("%w"))
+            dayNum = int(event.s.strftime("%w"))
 
-            if ((eventStartDateTime >= startDateTime) and
-                (eventStartDateTime < endDateTime)):
+            if ((event.s >= startDateTime) and
+                (event.s < endDateTime)):
 
-                if self.military:
-                    tmpTimeStr = eventStartDateTime.strftime("%H:%M")
+                if event.s.hour == 0 and event.s.minute == 0 and \
+                   event.e.hour == 0 and event.e.minute == 0:
+                    tmpTimeStr = ''
+                elif self.military:
+                    tmpTimeStr = event.s.strftime("%H:%M")
                 else:
                     tmpTimeStr = \
-                        eventStartDateTime.strftime("%I:%M").lstrip('0') + \
-                        eventStartDateTime.strftime('%p').lower()
+                        event.s.strftime("%I:%M").lstrip('0') + \
+                        event.s.strftime('%p').lower()
 
                 # newline and empty string are the keys to turn off coloring
                 weekEventStrings[dayNum] += \
@@ -510,10 +487,7 @@ class GoogleCalendar:
     def _GraphEvents(self, cmd, startDateTime, count, eventList):
 
         # ignore started events (i.e. that start previous day and end start day)
-        while (len(eventList) and
-               ((parse(eventList[0].when[0].start_time,
-                      default=startDateTime).astimezone(tzlocal())) <
-                startDateTime)):
+        while (len(eventList) and eventList[0].s < startDateTime):
             eventList = eventList[1:]
 
         dayDivider = ''
@@ -657,7 +631,7 @@ class GoogleCalendar:
             PrintMsg(CLR_NRM(), weekDivider + "\n")
 
 
-    def _PrintEvents(self, defaultDateTime, startDateTime, eventList):
+    def _PrintEvents(self, startDateTime, eventList):
 
         if (len(eventList) == 0):
             PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
@@ -669,30 +643,35 @@ class GoogleCalendar:
         day = ''
 
         for event in eventList:
-            eventStartDateTime = \
-                parse(event.when[0].start_time,
-                      default=defaultDateTime).astimezone(tzlocal())
 
-            if (self.ignoreStarted and (eventStartDateTime < startDateTime)):
+            if (self.ignoreStarted and (event.s < startDateTime)):
                 continue
 
-            tmpDayStr = eventStartDateTime.strftime(dayFormat)
+            tmpDayStr = event.s.strftime(dayFormat)
 
             if self.military:
-                timeEventFormat = '  %-5s  %s\n'
-                tmpTimeStr = eventStartDateTime.strftime("%H:%M")
+                timeFormat = '%-5s'
+                tmpTimeStr = event.s.strftime("%H:%M")
             else:
-                timeEventFormat = '  %-7s  %s\n'
+                timeFormat = '%-7s'
                 tmpTimeStr = \
-                    eventStartDateTime.strftime("%I:%M").lstrip('0').rjust(5) + \
-                    eventStartDateTime.strftime('%p').lower()
+                    event.s.strftime("%I:%M").lstrip('0').rjust(5) + \
+                    event.s.strftime('%p').lower()
 
             prefix = indent
             if (tmpDayStr != day): day = prefix = tmpDayStr
             PrintMsg(self.dateColor, prefix)
-            PrintMsg(self._CalendarColor(event.gcalcli_cal),
-                     timeEventFormat % \
-                     (tmpTimeStr, self._ValidTitle(event.title.text).strip()))
+            if event.s.hour == 0 and event.s.minute == 0 and \
+               event.e.hour == 0 and event.e.minute == 0:
+                fmt = '  ' + timeFormat + '  %s\n'
+                PrintMsg(self._CalendarColor(event.gcalcli_cal),
+                         fmt % \
+                         ('', self._ValidTitle(event.title.text).strip()))
+            else:
+                fmt = '  ' + timeFormat + '  %s\n'
+                PrintMsg(self._CalendarColor(event.gcalcli_cal),
+                         fmt % \
+                         (tmpTimeStr, self._ValidTitle(event.title.text).strip()))
 
             if self.details:
 
@@ -703,12 +682,9 @@ class GoogleCalendar:
                                                  event.where[0].value_string)
                     PrintMsg(clr, str)
 
-                if event.when[0].end_time:
-                    eventEndDateTime = parse(event.when[0].end_time,
-                                  default=defaultDateTime).astimezone(tzlocal())
-                    diffDateTime = (eventEndDateTime - eventStartDateTime)
-                    str = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
-                    PrintMsg(clr, str)
+                diffDateTime = (event.e - event.s)
+                str = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
+                PrintMsg(clr, str)
 
                 # XXX Why does accessing event.when[0].reminder[0] fail?
                 for rem in event.when[0].reminder:
@@ -732,7 +708,7 @@ class GoogleCalendar:
                     PrintMsg(clr, str)
 
 
-    def _GetAllEvents(self, cal, feed):
+    def _GetAllEvents(self, cal, feed, end):
 
         eventList = []
 
@@ -740,7 +716,30 @@ class GoogleCalendar:
             next = feed.GetNextLink()
 
             for event in feed.entry:
+
                 event.gcalcli_cal = cal
+
+                event.s = parse(event.when[0].start_time)
+                if event.s.tzinfo == None:
+                    event.s = event.s.replace(tzinfo=tzlocal())
+
+                event.e = parse(event.when[0].end_time)
+                if event.e.tzinfo == None:
+                    event.e = event.e.replace(tzinfo=tzlocal())
+
+                # For all-day events, Google seems to assume that the event time
+                # is based in the UTC instead of the local timezone.  Here we
+                # filter out those events start beyond a specified end time.
+                if end and (event.s >= end):
+                    continue
+
+                # http://en.wikipedia.org/wiki/Year_2038_problem
+                # Catch the year 2038 problem here as the python dateutil module
+                # can choke throwing a ValueError exception. If either the start
+                # or end time for an event has a year '>= 2038' dump it.
+                if ((event.s.year >= 2038) or (event.e.year >= 2038)):
+                    continue
+
                 eventList.append(event)
 
             if not next:
@@ -751,7 +750,7 @@ class GoogleCalendar:
         return eventList
 
 
-    def _SearchForCalEvents(self, start, end, defaultDateTime, searchText):
+    def _SearchForCalEvents(self, start, end, searchText):
 
         eventList = []
 
@@ -798,18 +797,9 @@ class GoogleCalendar:
 
         while not queue.empty():
             cal, feed = queue.get()
-            eventList.extend(self._GetAllEvents(cal, feed))
+            eventList.extend(self._GetAllEvents(cal, feed, end))
 
-        # XXX This eventList filter needs to be moved to the threads...
-        eventList = filter(lambda x:
-                           self._FilterOnEventDates(x, end, defaultDateTime),
-                           eventList)
-
-        eventList.sort(lambda x, y:
-                       cmp(parse(x.when[0].start_time,
-                                 default=defaultDateTime).astimezone(tzlocal()),
-                           parse(y.when[0].start_time,
-                                 default=defaultDateTime).astimezone(tzlocal())))
+        eventList.sort(lambda x, y: cmp(x.s, y.s))
 
         return eventList
 
@@ -846,29 +836,33 @@ class GoogleCalendar:
             start = None
 
         # convert now to midnight this morning and use for default
-        today = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
+        defaultDateTime = self.now.replace(hour=0,
+                                           minute=0,
+                                           second=0,
+                                           microsecond=0)
 
-        eventList = self._SearchForCalEvents(start, None, today, searchText)
+        eventList = \
+            self._SearchForCalEvents(start, None, searchText)
 
-        self._PrintEvents(today, self.now, eventList)
+        self._PrintEvents(self.now, eventList)
 
 
     def AgendaQuery(self, startText='', endText=''):
 
         if self.ignoreStarted:
-            today = self.now
+            defaultDateTime = self.now
         else:
             # convert now to midnight this morning and use for default
-            today = self.now.replace(hour=0,
-                                     minute=0,
-                                     second=0,
-                                     microsecond=0)
+            defaultDateTime = self.now.replace(hour=0,
+                                               minute=0,
+                                               second=0,
+                                               microsecond=0)
 
         if (startText == ''):
-            start = today
+            start = defaultDateTime
         else:
             try:
-                start = parse(startText, default=today)
+                start = parse(startText, default=defaultDateTime)
             except:
                 PrintErrMsg('Error: failed to parse start time\n')
                 return
@@ -877,26 +871,29 @@ class GoogleCalendar:
             end = (start + timedelta(days=self.agendaLength))
         else:
             try:
-                end = parse(endText, default=today)
+                end = parse(endText, default=defaultDateTime)
             except:
                 PrintErrMsg('Error: failed to parse end time\n')
                 return
 
-        eventList = self._SearchForCalEvents(start, end, start, None)
+        eventList = self._SearchForCalEvents(start, end, None)
 
-        self._PrintEvents(today, start, eventList)
+        self._PrintEvents(start, eventList)
 
 
     def CalQuery(self, cmd, startText='', count=1):
 
         # convert now to midnight this morning and use for default
-        today = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
+        defaultDateTime = self.now.replace(hour=0,
+                                           minute=0,
+                                           second=0,
+                                           microsecond=0)
 
         if (startText == ''):
-            start = today
+            start = defaultDateTime
         else:
             try:
-                start = parse(startText, default=today)
+                start = parse(startText, default=defaultDateTime)
                 start = start.replace(hour=0, minute=0, second=0, microsecond=0)
             except:
                 PrintErrMsg('Error: failed to parse start time\n')
@@ -922,7 +919,7 @@ class GoogleCalendar:
             if (totalDays % 7):
                 count += 1
 
-        eventList = self._SearchForCalEvents(start, end, start, None)
+        eventList = self._SearchForCalEvents(start, end, None)
 
         self._GraphEvents(cmd, start, count, eventList)
 
@@ -949,26 +946,23 @@ class GoogleCalendar:
         start = self.now
         end   = (start + timedelta(minutes=(minutes + 5)))
 
-        eventList = self._SearchForCalEvents(start, end, start, None)
+        eventList = self._SearchForCalEvents(start, end, None)
 
         message = ''
 
         for event in eventList:
-            today = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
-            eventStartDateTime = parse(event.when[0].start_time,
-                                       default=today).astimezone(tzlocal())
 
             # skip this event if it already started
             # XXX maybe add a 2+ minute grace period here...
-            if (eventStartDateTime < self.now):
+            if (event.s < self.now):
                 continue
 
             if self.military:
-                tmpTimeStr = eventStartDateTime.strftime('%H:%M')
+                tmpTimeStr = event.s.strftime('%H:%M')
             else:
                 tmpTimeStr = \
-                    eventStartDateTime.strftime('%I:%M').lstrip('0') + \
-                    eventStartDateTime.strftime('%p').lower()
+                    event.s.strftime('%I:%M').lstrip('0') + \
+                    event.s.strftime('%p').lower()
 
             message += '%s  %s\n' % \
                        (tmpTimeStr, self._ValidTitle(event.title.text).strip())
@@ -1156,23 +1150,23 @@ def BowChickaWowWow():
         PrintErrMsg('Error: no command\n')
         sys.exit(1)
 
-    gcal = GoogleCalendar(username=usr,
-                          password=pwd,
-                          https=https,
-                          access=access,
-                          workCalNames=workCalNames,
-                          military=military,
-                          details=details,
-                          ignoreStarted=ignoreStarted,
-                          calWidth=calWidth,
-                          calMonday=calMonday,
-                          calOwnerColor=calOwnerColor,
-                          calEditorColor=calEditorColor,
-                          calContributorColor=calContributorColor,
-                          calReadColor=calReadColor,
-                          calFreeBusyColor=calFreeBusyColor,
-                          dateColor=dateColor,
-                          borderColor=borderColor)
+    gcal = gcalcli(username=usr,
+                   password=pwd,
+                   https=https,
+                   access=access,
+                   workCalNames=workCalNames,
+                   military=military,
+                   details=details,
+                   ignoreStarted=ignoreStarted,
+                   calWidth=calWidth,
+                   calMonday=calMonday,
+                   calOwnerColor=calOwnerColor,
+                   calEditorColor=calEditorColor,
+                   calContributorColor=calContributorColor,
+                   calReadColor=calReadColor,
+                   calFreeBusyColor=calFreeBusyColor,
+                   dateColor=dateColor,
+                   borderColor=borderColor)
 
     if (args[0] == 'list'):
         gcal.ListAllCalendars()
