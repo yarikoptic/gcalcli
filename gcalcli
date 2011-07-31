@@ -59,11 +59,6 @@ from dateutil.tz import *
 from dateutil.parser import *
 
 
-# for unicode support
-sys.stdout = codecs.getwriter(locale.getpreferredencoding())(sys.stdout)
-sys.stdin = codecs.getreader(locale.getpreferredencoding())(sys.stdin)
-
-
 def Usage():
     sys.stdout.write('''
 Usage:
@@ -222,6 +217,15 @@ def DebugPrint(msg):
     sys.stdout.write(str(CLR_YLW()))
     sys.stdout.write(msg)
     sys.stdout.write(str(CLR_NRM()))
+
+
+def is_ascii(s):
+    try:
+        s.decode('ascii')
+    except UnicodeDecodeError:
+        return False
+    else:
+        return True
 
 
 class gcalcli:
@@ -1193,6 +1197,7 @@ def BowChickaWowWow():
         if (len(args) != 2):
             PrintErrMsg('Error: invalid search string\n')
             Usage()
+
         # allow unicode strings for input
         uniArg = unicode(args[1], locale.getpreferredencoding())
         gcal.TextQuery(uniArg)
