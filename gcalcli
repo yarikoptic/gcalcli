@@ -320,12 +320,12 @@ class gcalcli:
         # gcalcli defined way to order calendars XXX
         order = { self.ACCESS_OWNER       : 1,
                   self.ACCESS_EDITOR      : 2,
-                  self.ACCESS_CONTRIBUTOR : 3,
-                  self.ACCESS_OVERRIDE    : 4,
-                  self.ACCESS_RESPOND     : 5,
-                  self.ACCESS_FREEBUSY    : 6,
-                  self.ACCESS_READ        : 7,
-                  self.ACCESS_ROOT        : 8,
+                  self.ACCESS_ROOT        : 3,
+                  self.ACCESS_CONTRIBUTOR : 4,
+                  self.ACCESS_OVERRIDE    : 5,
+                  self.ACCESS_RESPOND     : 6,
+                  self.ACCESS_FREEBUSY    : 7,
+                  self.ACCESS_READ        : 8,
                   self.ACCESS_NONE        : 9 }
 
         self.allCals.entry.sort(lambda x, y:
