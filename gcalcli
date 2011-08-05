@@ -596,7 +596,7 @@ class gcalcli:
                 todayMarker = ''
                 if (self.now.strftime("%d%b%Y") ==
                     (startWeekDateTime + timedelta(days=j)).strftime("%d%b%Y")):
-                    todayMarker = " ***"
+                    todayMarker = " **"
                 line += str(self.dateColor) + \
                             dayFormat % (d + todayMarker) + \
                         str(CLR_NRM()) + \
