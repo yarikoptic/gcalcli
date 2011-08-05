@@ -57,6 +57,7 @@ from gdata.calendar.service import *
 from datetime import *
 from dateutil.tz import *
 from dateutil.parser import *
+from unicodedata import east_asian_width
 
 
 def Usage():
@@ -438,52 +439,79 @@ class gcalcli:
         return weekEventStrings
 
 
-    def _GetCutIndex(self, eventString, idx):
+    UNIWIDTH = {'W': 2, 'F': 2, 'N': 1, 'Na': 1, 'H': 1, 'A': 1}
 
-        cut1 = eventString.find('\n')
-        cut2 = eventString.find(' ')
 
-        DebugPrint("-- %s\n" % (eventString))
+    def _PrintLen(self, string):
+        printLen = 0
+        for tmpChar in string:
+            printLen += self.UNIWIDTH[east_asian_width(tmpChar)]
+        return printLen
 
-        if ((idx + len(eventString)) <= self.calWidth):
-            DebugPrint("--- %d (end of string)\n" % (idx + len(eventString)))
-            return (idx + len(eventString))
 
-        if (cut1 < 0):
-            if ((cut2 < 0) or (cut2 >= self.calWidth)):
-                cut = self.calWidth
-            else:
-                cut = cut2
-        elif (cut2 < 0):
-            if ((cut1 < 0) or (cut1 >= self.calWidth)):
-                cut = self.calWidth
-            else:
-                cut = cut1
-        else:
-            if ((cut1 <= cut2) and (cut1 < self.calWidth)):
-                cut = cut1
-            elif ((cut2 <= cut1) and (cut2 < self.calWidth)):
-                cut = cut2
-            else:
-                cut = self.calWidth
+    # return print length before cut, cut index, and force cut flag
+    def _NextCut(self, string, curPrintLen):
+        idx = 0
+        printLen = 0
+        for tmpChar in string:
+            if (curPrintLen + printLen) >= self.calWidth:
+                return (printLen, idx, True)
+            if tmpChar in (' ', '\n'):
+                return (printLen, idx, False)
+            idx += 1
+            printLen += self.UNIWIDTH[east_asian_width(tmpChar)]
+        return (printLen, -1, False)
 
-        DebugPrint("== %d (initial cut)\n" % (cut))
-        if ((cut == 0) or ((idx + cut) > self.calWidth)):
-            DebugPrint("** %d (no more) %s\n" % (idx, eventString))
-            return idx
 
-        if ((idx + cut) < self.calWidth):
-            while ((cut < len(eventString)) and (eventString[cut] == ' ')):
-                DebugPrint("! skipping space\n")
+    def _GetCutIndex(self, eventString):
+
+        printLen = self._PrintLen(eventString)
+
+        if printLen <= self.calWidth:
+            DebugPrint("------ printLen=%d (end of string)\n" % printLen)
+            return (printLen, len(eventString))
+
+        cutWidth, cut, forceCut = self._NextCut(eventString, 0)
+        DebugPrint("------ cutWidth=%d cut=%d \"%s\"\n" % \
+                   (cutWidth, cut, eventString))
+
+        if forceCut:
+            DebugPrint("--- forceCut cutWidth=%d cut=%d\n" % (cutWidth, cut))
+            return (cutWidth, cut)
+
+        DebugPrint("--- looping\n")
+
+        while cutWidth < self.calWidth:
+
+            DebugPrint("--- cutWidth=%d cut=%d \"%s\"\n" % \
+                (cutWidth, cut, eventString[cut:]))
+
+            while cut < self.calWidth and \
+                  cut < printLen and \
+                  eventString[cut] == ' ':
+                DebugPrint("-> skipping space <-\n")
+                cutWidth += 1
                 cut += 1
-            DebugPrint("=== %d (new cut)\n" % (cut))
-            DebugPrint("!! recurse (%d)\n" % (idx + cut))
-            cut = self._GetCutIndex(eventString[cut:], (idx + cut))
-            DebugPrint("!!!! %d %s\n" % (cut, eventString))
-            return cut
 
-        DebugPrint("** %d cut %s\n" % (idx, eventString))
-        return (idx + cut)
+            DebugPrint("--- cutWidth=%d cut=%d \"%s\"\n" % \
+                (cutWidth, cut, eventString[cut:]))
+
+            nextCutWidth, nextCut, forceCut = \
+                self._NextCut(eventString[cut:], cutWidth)
+
+            if forceCut:
+                DebugPrint("--- forceCut cutWidth=%d cut=%d\n" % (cutWidth, cut))
+                break
+
+            cutWidth += nextCutWidth
+            cut += nextCut
+
+            if eventString[cut] == '\n':
+                break
+
+            DebugPrint("--- loop cutWidth=%d cut=%d\n" % (cutWidth, cut))
+
+        return (cutWidth, cut)
 
 
     def _GraphEvents(self, cmd, startDateTime, count, eventList):
@@ -624,10 +652,12 @@ class gcalcli:
 
                     weekEventStrings[j] = weekEventStrings[j].lstrip()
 
-                    cut = self._GetCutIndex(weekEventStrings[j], 0)
+                    printLen, cut = self._GetCutIndex(weekEventStrings[j])
+                    padding = ' ' * (self.calWidth - printLen)
 
                     line += weekColorStrings[j] + \
-                            dayFormat % (weekEventStrings[j][:cut]) + \
+                            weekEventStrings[j][:cut] + \
+                            padding + \
                             str(CLR_NRM())
                     weekEventStrings[j] = weekEventStrings[j][cut:]
 
