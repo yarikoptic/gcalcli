@@ -41,6 +41,8 @@
 #        http://effbot.org/zone/element-index.htm
 #  - dateutil Python module
 #        http://www.labix.org/python-dateutil
+#  - vobject Python module (optional, needed for importing ics/vcal files)
+#        http://vobject.skyhouseconsulting.com
 #
 
 __program__ = 'gcalcli'
@@ -395,6 +397,18 @@ class gcalcli:
             return self.calReadColor
         else:
             return CLR_NRM()
+
+
+    def _TargetCalendar(self):
+
+        if len(self.cals) == 1:
+            if self.https: prefix = 'https://'
+            else:          prefix = 'http://'
+            match = re.match('^' + prefix + 'www.google.com(.*)$',
+                             self.cals[0].gcalcli_altLink)
+            return match.group(1)
+        else:
+            return '/calendar/feeds/default/private/full'
 
 
     def _ValidTitle(self, title):
@@ -976,21 +990,13 @@ class gcalcli:
     def QuickAdd(self, eventText):
 
         if eventText == '':
-            raise Exception("No event information specified")
-
-        if len(self.cals) != 1:
-            raise Exception("Must specify a calendar")
+            return
 
         quickEvent = gdata.calendar.CalendarEventEntry()
         quickEvent.content = atom.Content(text=eventText)
         quickEvent.quick_add = gdata.calendar.QuickAdd(value='true')
 
-        if self.https: prefix = 'https://'
-        else:          prefix = 'http://'
-        match = re.match('^' + prefix + 'www.google.com(.*)$',
-                         self.cals[0].gcalcli_altLink)
-
-        self.gcal.InsertEvent(quickEvent, match.group(1))
+        self.gcal.InsertEvent(quickEvent, self._TargetCalendar())
 
 
     def Remind(self, minutes=10, command=None):
@@ -1037,6 +1043,105 @@ class gcalcli:
         pid = os.fork()
         if not pid:
             os.execvp(cmd[0], cmd)
+
+
+    def ImportICS(self, icsFile=None):
+        try:
+            import vobject
+        except:
+            PrintErrMsg('Python vobject module not installed!\n')
+            sys.exit(1)
+
+        f = sys.stdin
+
+        if icsFile:
+            try:
+                f = file(icsFile)
+            except Exception, e:
+                PrintErrMsg("Error: " + str(e) + "!\n")
+                sys.exit(1)
+
+        while True:
+
+            try:
+                v = vobject.readComponents(f).next()
+            except StopIteration:
+                break
+
+            ve = v.vevent
+            event = gdata.calendar.CalendarEventEntry()
+
+            if hasattr(ve, 'summary'):
+                DebugPrint("SUMMARY: %s\n" % ve.summary.value)
+                event.title = atom.Title(text=ve.summary.value)
+
+            if hasattr(ve, 'location'):
+                DebugPrint("LOCATION: %s\n" % ve.location.value)
+                event.where = gdata.calendar.Where(value_string=ve.location.value)
+
+            if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
+                PrintErrMsg("Error: file does not have both dtstart and dtend!\n")
+                sys.exit(1)
+
+            DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
+            DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
+
+            if hasattr(ve, 'rrule'):
+
+                DebugPrint("RRULE: %s\n" % ve.rrule.value)
+
+                #
+                # In order to add an RRULE using a DTSTART and DTEND in the
+                # local timezone, there needs to be a TIMEZONE section in the
+                # recurrence field. Since that is a pain and I'm lazy... as
+                # a workaround I convert the DTSTART and DTEND to UTC. Google
+                # handles this properly and keys off the timezone setting of
+                # the calendar being added to.  The event will be shown at the
+                # correct local time. :-)
+                #
+
+                if False:
+                    # A TIMEZONE section is needed for this to work XXX
+                    recurrence = \
+                        "DTSTART;TZID=" + \
+                            ve.dtstart.value.tzinfo._tzid + ":" + \
+                            ve.dtstart.value.strftime('%Y%m%dT%H%M%S') + \
+                            '\r\n' + \
+                        "DTEND;TZID=" + \
+                            ve.dtend.value.tzinfo._tzid + ":" + \
+                            ve.dtend.value.strftime('%Y%m%dT%H%M%S') + \
+                            '\r\n' + \
+                        "RRULE:" + ve.rrule.value + '\r\n'
+                else:
+                    ve.dtstart.value -= ve.dtstart.value.utcoffset()
+                    ve.dtstart.value = ve.dtstart.value.replace(tzinfo=None)
+                    ve.dtend.value -= ve.dtend.value.utcoffset()
+                    ve.dtend.value = ve.dtend.value.replace(tzinfo=None)
+                    recurrence = \
+                        "DTSTART:" + \
+                            ve.dtstart.value.strftime('%Y%m%dT%H%M%S') + \
+                            '\r\n' + \
+                        "DTEND:" + \
+                            ve.dtend.value.strftime('%Y%m%dT%H%M%S') + \
+                            '\r\n' + \
+                        "RRULE:" + ve.rrule.value + '\r\n'
+
+                DebugPrint("RECURRENCE:\n%s\n" % recurrence)
+                event.recurrence = \
+                    gdata.calendar.Recurrence(text=recurrence)
+
+            elif hasattr(ve, 'dtstart') and hasattr(ve, 'dtend'):
+
+                start = ve.dtstart.value.isoformat()
+                end   = ve.dtend.value.isoformat()
+                event.when = gdata.calendar.When(start_time=start,
+                                                 end_time=end)
+
+            if hasattr(ve, 'description'):
+                DebugPrint("DESCRIPTION: %s\n" % ve.description.value)
+                event.content = atom.Content(text=ve.description.value)
+
+            self.gcal.InsertEvent(event, self._TargetCalendar())
 
 
 def LoadConfig(configFile):
@@ -1300,8 +1405,9 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        uniArg = unicode(args[1], locale.getpreferredencoding())
-        gcal.TextQuery(uniArg)
+        gcal.TextQuery(unicode(args[1], locale.getpreferredencoding()))
+
+        sys.stdout.write('\n')
 
     elif args[0] == 'agenda':
         if len(args) == 3: # start and end
@@ -1313,6 +1419,8 @@ def BowChickaWowWow():
         else:
             PrintErrMsg('Error: invalid agenda arguments\n')
             sys.exit(1)
+
+        sys.stdout.write('\n')
 
     elif args[0] == 'calw':
         if not calWidth:
@@ -1336,6 +1444,8 @@ def BowChickaWowWow():
             PrintErrMsg('Error: invalid calw arguments\n')
             sys.exit(1)
 
+        sys.stdout.write('\n')
+
     elif args[0] == 'calm':
         if not calWidth:
             PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
@@ -1349,20 +1459,15 @@ def BowChickaWowWow():
             PrintErrMsg('Error: invalid calm arguments\n')
             sys.exit(1)
 
+        sys.stdout.write('\n')
+
     elif args[0] == 'quick':
         if len(args) != 2:
             PrintErrMsg('Error: invalid event text\n')
             sys.exit(1)
 
         # allow unicode strings for input
-        uniArg = unicode(args[1], locale.getpreferredencoding())
-        try:
-            gcal.QuickAdd(uniArg)
-        except Exception, e:
-            PrintErrMsg("Error: " + str(e) + "!\n")
-            sys.exit(1)
-
-        return
+        gcal.QuickAdd(unicode(args[1], locale.getpreferredencoding()))
 
     elif args[0] == 'remind':
         if len(args) == 3: # minutes and command
@@ -1374,13 +1479,16 @@ def BowChickaWowWow():
         else:
             PrintErrMsg('Error: invalid remind arguments\n')
             sys.exit(1)
-        return
+
+    elif args[0] == 'import':
+        if len(args) == 2: # ics file
+            gcal.ImportICS(args[1])
+        else:
+            gcal.ImportICS() # stdin
 
     else:
         PrintErrMsg('Error: unknown command\n')
         sys.exit(1)
-
-    sys.stdout.write('\n')
 
 
 if __name__ == '__main__':
