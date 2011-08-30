@@ -4,6 +4,7 @@ gcalcli (2.1-1) unstable; urgency=low
   * Adjusted watch file to use googlecode.debian.net redirector
   * Added a basic gbp.conf
   * Use dh7
+  * Switch to use 3.0 (quilt) source pkg format
 
  -- Yaroslav Halchenko <debian@onerussian.com>  Tue, 30 Aug 2011 10:35:13 +0200
 
