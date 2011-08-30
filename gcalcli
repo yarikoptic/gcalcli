@@ -335,7 +335,6 @@ class gcalcli:
 
         # gcalcli defined way to order calendars XXX
         order = { self.ACCESS_OWNER       : 1,
-                  self.ACCESS_ROOT        : 1.5,
                   self.ACCESS_EDITOR      : 2,
                   self.ACCESS_ROOT        : 3,
                   self.ACCESS_CONTRIBUTOR : 4,
