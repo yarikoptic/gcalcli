@@ -1,6 +1,7 @@
 gcalcli (2.1-1) unstable; urgency=low
 
   * Fresh upstream release (Closes: #639508)
+    + patches/up_pep0394_not_yet_there
   * Adjusted watch file to use googlecode.debian.net redirector
   * Added a basic gbp.conf
   * Use dh7
