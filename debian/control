@@ -5,8 +5,8 @@ Maintainer: Yaroslav Halchenko <debian@onerussian.com>
 Homepage: http://code.google.com/p/gcalcli/
 Vcs-git: git://git.onerussian.com/deb/gcalcli
 Vcs-Browser: http://git.onerussian.com/?p=deb/gcalcli.git
-Build-Depends: debhelper (>= 5)
-Standards-Version: 3.8.4
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.9.2
 
 Package: gcalcli
 Architecture: all
