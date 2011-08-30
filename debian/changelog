@@ -2,6 +2,7 @@ gcalcli (2.1-1) unstable; urgency=low
 
   * Fresh upstream release (Closes: #639508)
   * Adjusted watch file to use googlecode.debian.net redirector
+  * Added a basic gbp.conf
 
  -- Yaroslav Halchenko <debian@onerussian.com>  Tue, 30 Aug 2011 10:35:13 +0200
 
