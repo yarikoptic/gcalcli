@@ -1,0 +1,17 @@
+From: Yaroslav Halchenko <debian@onerussian.com>
+Subject: enforce UTF-8 for PrintMsg only if not UTF already
+Bug-Debian: http://bugs.debian.org/649619
+
+--- a/gcalcli
++++ b/gcalcli
+@@ -227,7 +227,9 @@ def PrintErrMsg(msg):
+ def PrintMsg(color, msg):
+     if CLR.useColor:
+         sys.stdout.write(str(color))
+-        sys.stdout.write(unicode(msg, 'UTF-8'))
++        if not isinstance(msg, unicode):
++           msg = unicode(msg, 'UTF-8')
++        sys.stdout.write(msg)
+         sys.stdout.write(str(CLR_NRM()))
+     else:
+         sys.stdout.write(unicode(msg, 'UTF-8'))
