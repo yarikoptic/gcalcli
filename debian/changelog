@@ -1,3 +1,9 @@
+gcalcli (2.1-2) unstable; urgency=low
+
+  * [fb11d2a] BF: up_conditional_unicode patch (Closes: #649619)
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Tue, 22 Nov 2011 18:20:38 -0500
+
 gcalcli (2.1-1) unstable; urgency=low
 
   * Fresh upstream release (Closes: #639508)
