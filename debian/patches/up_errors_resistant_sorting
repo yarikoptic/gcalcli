@@ -1,0 +1,35 @@
+From cf983d0a3902776f0a13d0d6fac0d7b606bdc4e0 Mon Sep 17 00:00:00 2001
+From: Yaroslav Halchenko <debian@onerussian.com>
+Date: Tue, 23 Mar 2010 11:49:58 -0400
+Subject: [PATCH] ENH: Making sorting of calendars error resistant by placing
+ unknown keys last. Thanks Bill Gatliff for suggestion
+
+---
+ gcalcli |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/gcalcli b/gcalcli
+index 4010fca..fe96bae 100755
+--- a/gcalcli
++++ b/gcalcli
+@@ -311,9 +311,15 @@ class GoogleCalendar:
+                   self.ACCESS_FREEBUSY    : 5,
+                   self.ACCESS_NONE        : 6 }
+ 
++        def order_resistant(k):
++            """Helper which would not puke but order last entries with
++            unknown keys
++            """
++            return order.get(k, order[self.ACCESS_NONE]+1)
++
+         self.allCals.entry.sort(lambda x, y:
+-                                cmp(order[x.access_level.value],
+-                                    order[y.access_level.value]))
++                                cmp(order_resistant(x.access_level.value),
++                                    order_resistant(y.access_level.value)))
+ 
+         for cal in self.allCals.entry:
+ 
+-- 
+1.7.6.3
+

@@ -349,15 +349,9 @@ class gcalcli:
                   self.ACCESS_READ        : 8,
                   self.ACCESS_NONE        : 9 }
 
-        def order_resistant(k):
-            """Helper which would not puke but order last entries with
-            unknown keys
-            """
-            return order.get(k, order[self.ACCESS_NONE]+1)
-
         self.allCals.entry.sort(lambda x, y:
-                                cmp(order_resistant(x.access_level.value),
-                                    order_resistant(y.access_level.value)))
+                                cmp(order[x.access_level.value],
+                                    order[y.access_level.value]))
 
         for cal in self.allCals.entry:
 
