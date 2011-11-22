@@ -6,16 +6,24 @@ Subject: [PATCH] BF: using patch from http://www.freebsd.org/cgi/query-pr.cgi?pr
  gcalcli |   10 +++++-----
  1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/gcalcli b/gcalcli
-index 9065ddf..f5ce096 100755
 --- a/gcalcli
 +++ b/gcalcli
-@@ -195,25 +195,25 @@ class CLR_BRWHT(CLR): color = "[37;1m"
+@@ -214,29 +214,35 @@ class CLR_BRCYN(CLR): color = "\033[36;1
+ class CLR_WHT(CLR):   color = "\033[0;37m"
+ class CLR_BRWHT(CLR): color = "\033[37;1m"
+ 
++def cunicode(s):
++    """Conditional conversion to unicode if string is not yet unicode
++    """
++    if not isinstance(s, unicode):
++        return unicode(s, 'UTF-8')
++    return s
+ 
  def PrintErrMsg(msg):
      if CLR.useColor:
          sys.stdout.write(str(CLR_BRRED()))
 -        sys.stdout.write(msg)
-+        sys.stdout.write(unicode(msg, 'UTF-8'))
++        sys.stdout.write(cunicode(msg))
          sys.stdout.write(str(CLR_NRM()))
      else:
 -        sys.stdout.write(msg)
@@ -26,7 +34,7 @@ index 9065ddf..f5ce096 100755
      if CLR.useColor:
          sys.stdout.write(str(color))
 -        sys.stdout.write(msg)
-+        sys.stdout.write(unicode(msg, 'UTF-8'))
++        sys.stdout.write(cunicode(msg))
          sys.stdout.write(str(CLR_NRM()))
      else:
 -        sys.stdout.write(msg)
@@ -37,10 +45,7 @@ index 9065ddf..f5ce096 100755
      return
      sys.stdout.write(str(CLR_YLW()))
 -    sys.stdout.write(msg)
-+    sys.stdout.write(unicode(msg, 'UTF-8'))
++    sys.stdout.write(cunicode(msg))
      sys.stdout.write(str(CLR_NRM()))
  
  
--- 
-1.7.6.3
-
