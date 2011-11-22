@@ -1,0 +1,46 @@
+From: Yaroslav Halchenko <debian@onerussian.com>
+Date: Tue, 9 Jun 2009 13:55:40 -0400
+Subject: [PATCH] BF: using patch from http://www.freebsd.org/cgi/query-pr.cgi?pr=125327. (Closes: #504812)
+
+---
+ gcalcli |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/gcalcli b/gcalcli
+index 9065ddf..f5ce096 100755
+--- a/gcalcli
++++ b/gcalcli
+@@ -195,25 +195,25 @@ class CLR_BRWHT(CLR): color = "[37;1m"
+ def PrintErrMsg(msg):
+     if CLR.useColor:
+         sys.stdout.write(str(CLR_BRRED()))
+-        sys.stdout.write(msg)
++        sys.stdout.write(unicode(msg, 'UTF-8'))
+         sys.stdout.write(str(CLR_NRM()))
+     else:
+-        sys.stdout.write(msg)
++        sys.stdout.write(unicode(msg, 'UTF-8'))
+ 
+ 
+ def PrintMsg(color, msg):
+     if CLR.useColor:
+         sys.stdout.write(str(color))
+-        sys.stdout.write(msg)
++        sys.stdout.write(unicode(msg, 'UTF-8'))
+         sys.stdout.write(str(CLR_NRM()))
+     else:
+-        sys.stdout.write(msg)
++        sys.stdout.write(unicode(msg, 'UTF-8'))
+ 
+ 
+ def DebugPrint(msg):
+     return
+     sys.stdout.write(str(CLR_YLW()))
+-    sys.stdout.write(msg)
++    sys.stdout.write(unicode(msg, 'UTF-8'))
+     sys.stdout.write(str(CLR_NRM()))
+ 
+ 
+-- 
+1.7.6.3
+
