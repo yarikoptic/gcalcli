@@ -1,6 +1,9 @@
 gcalcli (2.1-2) unstable; urgency=low
 
-  * [fb11d2a] BF: up_conditional_unicode patch (Closes: #649619)
+  * Refactored remaining Debian upstream-intended changes into 2 patches:
+    - up_unicode_support
+    - up_errors_resistant_sorting
+  * Convert to unicode only if string is not unicode yet (Closes: #649619)
 
  -- Yaroslav Halchenko <debian@onerussian.com>  Tue, 22 Nov 2011 18:20:38 -0500
 
