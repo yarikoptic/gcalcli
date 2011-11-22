@@ -8,13 +8,11 @@ Subject: [PATCH] ENH: Making sorting of calendars error resistant by placing
  gcalcli |   10 ++++++++--
  1 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/gcalcli b/gcalcli
-index 4010fca..fe96bae 100755
 --- a/gcalcli
 +++ b/gcalcli
-@@ -311,9 +311,15 @@ class GoogleCalendar:
-                   self.ACCESS_FREEBUSY    : 5,
-                   self.ACCESS_NONE        : 6 }
+@@ -355,9 +355,15 @@ class gcalcli:
+                   self.ACCESS_READ        : 8,
+                   self.ACCESS_NONE        : 9 }
  
 +        def order_resistant(k):
 +            """Helper which would not puke but order last entries with
@@ -30,6 +28,3 @@ index 4010fca..fe96bae 100755
  
          for cal in self.allCals.entry:
  
--- 
-1.7.6.3
-
