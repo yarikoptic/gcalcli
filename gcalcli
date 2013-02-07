@@ -700,8 +700,9 @@ class gcalcli:
                 else:
                     break
 
+        # XXX see _SearchForCalEvents()
         # sort all events across all calendars together
-        self.allEvents.sort(lambda x, y: cmp(x['s'], y['s']))
+        #self.allEvents.sort(lambda x, y: cmp(x['s'], y['s']))
 
         if self.useCache:
             self.cache['allCals']   = self.allCals
@@ -1423,6 +1424,12 @@ class gcalcli:
 
             # event is within search time
             eventList.append(event)
+
+        # XXX
+        # sorting here instead of inside _GetCached()
+        # the idea is that sorting all events doesn't really
+        # make sense since many will have recurrance rules
+        eventList.sort(lambda x, y: cmp(x['s'], y['s']))
 
         return eventList
 
