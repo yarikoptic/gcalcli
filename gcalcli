@@ -1394,101 +1394,31 @@ class gcalcli:
                 work(event)
 
 
-    def _GetAllEvents(self, cal, events, end):
-
-        eventList = []
-
-        while 1:
-            if 'items' not in events:
-                break
-
-            for event in events['items']:
-
-                event['gcalcli_cal'] = cal
-
-                if 'status' in event and event['status'] == 'cancelled':
-                    continue
-
-                if 'dateTime' in event['start']:
-                    event['s'] = parse(event['start']['dateTime'])
-                else:
-                    event['s'] = parse(event['start']['date']) # all date events
-
-                if event['s'].tzinfo == None:
-                    event['s'] = event['s'].replace(tzinfo=tzlocal())
-                else:
-                    event['s'] = event['s'].astimezone(tzlocal())
-
-                if 'dateTime' in event['end']:
-                    event['e'] = parse(event['end']['dateTime'])
-                else:
-                    event['e'] = parse(event['end']['date']) # all date events
-
-                if event['e'].tzinfo == None:
-                    event['e'] = event['e'].replace(tzinfo=tzlocal())
-                else:
-                    event['e'] = event['e'].astimezone(tzlocal())
-
-                # For all-day events, Google seems to assume that the event time
-                # is based in the UTC instead of the local timezone.  Here we
-                # filter out those events start beyond a specified end time.
-                if end and (event['s'] >= end):
-                    continue
-
-                # http://en.wikipedia.org/wiki/Year_2038_problem
-                # Catch the year 2038 problem here as the python dateutil module
-                # can choke throwing a ValueError exception. If either the start
-                # or end time for an event has a year '>= 2038' dump it.
-                if event['s'].year >= 2038 or event['e'].year >= 2038:
-                    continue
-
-                eventList.append(event)
-
-            pageToken = events.get('nextPageToken')
-            if pageToken:
-                events = self._CalService().events().\
-                         list(calendarId = cal['id'],
-                              pageToken = pageToken).execute()
-            else:
-                break
-
-        return eventList
-
-
     def _SearchForCalEvents(self, start, end, searchText):
 
         eventList = []
 
-        queue = Queue()
-        threads = []
+        for event in self.allEvents:
+            # if start time then event must start after
+            if start and event['s'] <= start:
+                continue
 
-        def worker(cal, work):
-            events = work.execute()
-            queue.put((cal, events))
+            # if end time then event must start before
+            if end and event['s'] > end:
+                continue
 
-        for cal in self.cals:
+            # if search text then match against event title and description
+            if searchText:
+                reflags = re.IGNORECASE
+                if (('summary' in event and
+                     re.search(searchText, event['summary'], reflags)) or
+                    ('description' in event and
+                     re.search(searchText, event['description'], reflags))):
+                    eventList.append(event)
+                continue
 
-            work = self._CalService().events().\
-                   list(calendarId = cal['id'],
-                        timeMin = start.isoformat() if start else None,
-                        timeMax = end.isoformat() if end else None,
-                        q = searchText if searchText else None,
-                        singleEvents = True)
-
-            #th = threading.Thread(target=worker, args=(cal, work))
-            #threads.append(th)
-            #th.start()
-            events = work.execute()
-            queue.put((cal, events))
-
-        #for th in threads:
-        #    th.join()
-
-        while not queue.empty():
-            cal, events = queue.get()
-            eventList.extend(self._GetAllEvents(cal, events, end))
-
-        eventList.sort(lambda x, y: cmp(x['s'], y['s']))
+            # event is within search time
+            eventList.append(event)
 
         return eventList
 
