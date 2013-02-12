@@ -73,7 +73,7 @@ __gcalcli_api_key__ = 'AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc'
 
 try:
     import sys, os, re, urllib, getopt, shlex, subprocess, time
-    import codecs, locale, csv, threading, textwrap, signal
+    import codecs, locale, csv, threading, textwrap, signal, copy
     from Queue import Queue
     from ConfigParser import RawConfigParser
     from datetime import datetime, timedelta, date
@@ -1404,6 +1404,39 @@ class gcalcli:
         eventList = []
 
         for event in self.allEvents:
+            # if RRULE then we need to grow a brain...
+            if 'recurrence' in event:
+                try:
+                    rs = rrulestr(event['recurrence'][0],
+                                  dtstart=event['s'],
+                                  forceset=True)
+                except ValueError:
+                    # eh' skip it
+                    continue
+
+                try:
+                    rrs = rs.between(start, end, inc=True)
+                    for rr in rrs:
+                        e = copy.copy(event)
+                        e['s'] = rr
+                        # if start time then event must start after
+                        if start and event['s'] <= start:
+                            continue
+                        # if end time then event must start before
+                        if end and event['s'] > end:
+                            continue
+                        eventList.append(e)
+                except TypeError:
+                    #print event['summary']
+                    #print event['start']
+                    #print event['s']
+                    #print event['recurrence']
+                    #print start
+                    #print end
+                    pass
+
+                continue
+
             # if start time then event must start after
             if start and event['s'] <= start:
                 continue
@@ -1428,7 +1461,7 @@ class gcalcli:
         # XXX
         # sorting here instead of inside _GetCached()
         # the idea is that sorting all events doesn't really
-        # make sense since many will have recurrance rules
+        # make sense since many will have recurrence rules
         eventList.sort(lambda x, y: cmp(x['s'], y['s']))
 
         return eventList
