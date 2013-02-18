@@ -1745,11 +1745,21 @@ class gcalcli:
 
 
     def ImportICS(self, verbose=False, reminder=None, icsFile=None):
+        # eventually I'd like to make this a flagged feature so if people have
+        # both, they can specify which one, but otherwise use vobject first then
+        # fallback to icalendar
+        # Using generator functions means we should be able to easily expand to
+        # support import from multiple sources such a hCalendar, atom, rss, etc
         try:
             import vobject
+            caller = self._ImportVobject
         except:
-            PrintErrMsg('Python vobject module not installed!\n')
-            sys.exit(1)
+            try:
+                import icalendar
+                caller = self._ImportIcalendar
+            except:
+                PrintErrMsg('No vobject or icalendar module installed!\n')
+                sys.exit(1)
 
         if len(self.cals) != 1:
             PrintErrMsg("Must specify a single calendar\n")
@@ -1759,11 +1769,89 @@ class gcalcli:
 
         if icsFile:
             try:
-                f = file(icsFile)
+                f = file(icsFile, "rb")
             except Exception, e:
                 PrintErrMsg("Error: " + str(e) + "!\n")
                 sys.exit(1)
 
+        for event in caller(reminder, f):
+            if reminder:
+                event['reminders'] = {'useDefault' : False,
+                                      'overrides'  : [{'minutes' : reminder,
+                                                       'method'  : 'popup'}]}
+
+            if verbose:
+                print event
+                PrintMsg(CLR_MAG(), "\n[S]kip [i]mport [q]uit: ")
+                val = raw_input()
+                if not val or val.lower() == 's':
+                    continue
+                elif val.lower() == 'q':
+                    sys.exit(0)
+                elif val.lower() != 'i':
+                    PrintErrMsg('Error: invalid input\n')
+                    sys.exit(1)
+
+            newEvent = self._CalService().events().\
+                       insert(calendarId = self.cals[0]['id'],
+                              body = event).execute()
+
+            if verbose:
+                hLink = self._ShortenURL(newEvent['htmlLink'])
+                PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
+
+    def _ImportIcalendar(self, reminder, f):
+        # I have some ics files that seem to cause decoded() to break
+        # May need to open a bug report with icalendar dev team on this
+        # This wrapper is a workaround for now
+        def value_to_string(obj, attr, default):
+            try:
+                return obj.decoded(attr, default)
+            except:
+                try:
+                    return unicode(obj[attr])
+                except:
+                    return default
+
+        import icalendar
+        vobject = icalendar.Calendar.from_ical(f.read())
+        event = {}
+
+        for ve in vobject.walk("VEVENT"):
+            event['summary'] = value_to_string(ve, 'summary', None)
+            event['description'] = value_to_string(ve, 'description', None)
+            event['location'] = value_to_string(ve, 'location', None)
+            if 'dtstart' in ve:
+                event['start'] = { 
+                    'dateTime': ve.decoded('dtstart', None).isoformat(),
+                    'timeZone': self.cals[0]['timeZone']
+                }
+            if 'dtend' in ve:
+                event['end'] = {
+                    'dateTime': ve.decoded('dtend', None).isoformat(),
+                    'timeZone': self.cals[0]['timeZone']
+                }
+            event['recurrence'] = ve.decoded('rrule', None)
+            if 'organizer' in ve:
+                event['organizer'] = {
+                    'displayName': ve['organizer'].params['CN'] if 'CN' in ve['organizer'].params else None,
+                    'email': ve.decoded('organizer', '').replace("MAILTO:", "")
+                }
+
+            event['attendees'] = []
+            if 'attendee' in ve:
+                for a in ve['attendee']:
+                    event['attendees'].append({
+                        'displayName': a.params['CN'] if 'CN' in a.params else None,
+                        # Calling ve.decoded(a, '') returns an empty string
+                        # This does essentially the same thing as decode but
+                        # gives us the correct value.
+                        'email': a.from_ical(a).replace("MAILTO:", "")
+                    })
+
+            yield event
+
+    def _ImportVobject(self, reminder, f):
         while True:
 
             try:
@@ -1776,14 +1864,10 @@ class gcalcli:
 
             if hasattr(ve, 'summary'):
                 DebugPrint("SUMMARY: %s\n" % ve.summary.value)
-                if verbose:
-                    print "Event........%s" % ve.summary.value
                 event['summary'] = ve.summary.value
 
             if hasattr(ve, 'location'):
                 DebugPrint("LOCATION: %s\n" % ve.location.value)
-                if verbose:
-                    print "Location.....%s" % ve.location.value
                 event['location'] = ve.location.value
 
             if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
@@ -1792,19 +1876,6 @@ class gcalcli:
 
             DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
             DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
-            if verbose:
-                print "Start........%s" % ve.dtstart.value.isoformat(' ')
-                print "End..........%s" % ve.dtend.value.isoformat(' ')
-                print "Local Start..%s" % ve.dtstart.value.astimezone(tzlocal())
-                print "Local End....%s" % ve.dtend.value.astimezone(tzlocal())
-
-            if hasattr(ve, 'rrule'):
-
-                DebugPrint("RRULE: %s\n" % ve.rrule.value)
-                if verbose:
-                    print "Recurrence...%s" % ve.rrule.value
-
-                event['recurrence'] = [ "RRULE:" + ve.rrule.value ]
 
             if hasattr(ve, 'dtstart') and hasattr(ve, 'dtend'):
 
@@ -1833,16 +1904,13 @@ class gcalcli:
                                    'timeZone' : self.cals[0]['timeZone'] }
                                    #'timeZone' : ve.dtend.value.tzinfo._tzid }
 
-                if reminder:
-                    event['reminders'] = {'useDefault' : False,
-                                          'overrides'  : [{'minutes' : reminder,
-                                                           'method'  : 'popup'}]}
+            if hasattr(ve, 'rrule'):
+                DebugPrint("RRULE: %s\n" % ve.rrule.value)
+                event['recurrence'] = [ "RRULE:" + ve.rrule.value ]
 
             if hasattr(ve, 'description') and ve.description.value.strip():
                 descr = ve.description.value.strip()
                 DebugPrint("DESCRIPTION: %s\n" % descr)
-                if verbose:
-                    print "Description:\n%s" % descr
                 event['description'] = descr
 
             if hasattr(ve, 'organizer'):
@@ -1852,49 +1920,22 @@ class gcalcli:
                     email = ve.organizer.value[7:]
                 else:
                     email = ve.organizer.value
-                if verbose:
-                    print "organizer:\n %s" % email
                 event['organizer'] = { 'displayName' : ve.organizer.name,
                                        'email'       : email }
 
             if hasattr(ve, 'attendee_list'):
                 DebugPrint("ATTENDEE_LIST : %s\n" % ve.attendee_list)
-                if verbose:
-                    print "attendees:"
                 event['attendees'] = []
                 for attendee in ve.attendee_list:
                     if attendee.value.startswith("MAILTO:"):
                         email = attendee.value[7:]
                     else:
                         email = attendee.value
-                    if verbose:
-                        print " %s" % email
 
                     event['attendees'].append({ 'displayName' : attendee.name,
                                                 'email'       : email })
 
-            if not verbose:
-                newEvent = self._CalService().events().\
-                           insert(calendarId = self.cals[0]['id'],
-                                  body = event).execute()
-                continue
-
-            #dprint(event)
-            PrintMsg(CLR_MAG(), "\n[S]kip [i]mport [q]uit: ")
-            val = raw_input()
-            if not val or val.lower() == 's':
-                continue
-            if val.lower() == 'i':
-                newEvent = self._CalService().events().\
-                           insert(calendarId = self.cals[0]['id'],
-                                  body = event).execute()
-                hLink = self._ShortenURL(newEvent['htmlLink'])
-                PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
-            elif val.lower() == 'q':
-                sys.exit(0)
-            else:
-                PrintErrMsg('Error: invalid input\n')
-                sys.exit(1)
+            yield event
 
 
 def LoadConfig(configFile):
