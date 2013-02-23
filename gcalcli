@@ -1859,54 +1859,56 @@ class gcalcli:
             except StopIteration:
                 break
 
-            ve = v.vevent
-            event = {}
+            for ve in v.vevent_list:
 
-            if hasattr(ve, 'summary'):
-                DebugPrint("SUMMARY: %s\n" % ve.summary.value)
-                event['summary'] = ve.summary.value
+                ve = v.vevent
+                event = {}
 
-            if hasattr(ve, 'location'):
-                DebugPrint("LOCATION: %s\n" % ve.location.value)
-                event['location'] = ve.location.value
+                if hasattr(ve, 'summary'):
+                    DebugPrint("SUMMARY: %s\n" % ve.summary.value)
+                    event['summary'] = ve.summary.value
 
-            if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
-                PrintErrMsg("Error: event does not have a dtstart and dtend!\n")
-                continue
+                if hasattr(ve, 'location'):
+                    DebugPrint("LOCATION: %s\n" % ve.location.value)
+                    event['location'] = ve.location.value
 
-            DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
-            DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
+                if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
+                    PrintErrMsg("Error: event does not have a dtstart and dtend!\n")
+                    continue
 
-            if hasattr(ve, 'dtstart') and hasattr(ve, 'dtend'):
+                DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
+                DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
 
-                start = ve.dtstart.value.isoformat()
-                end   = ve.dtend.value.isoformat()
+                if hasattr(ve, 'dtstart') and hasattr(ve, 'dtend'):
 
-                # XXX
-                # Timezone madness! Note that we're using the timezone for the
-                # calendar being added to. This is OK if the event is in the
-                # same timezone. This needs to be changed to use the timezone
-                # from the DTSTART and DTEND values. Problem is, for example,
-                # the TZID might be "Pacific Standard Time" and Google expects
-                # a timezone string like "America/Los_Angeles". Need to find
-                # a way in python to convert to the more specific timezone
-                # string.
-                # XXX
-                # print ve.dtstart.params['X-VOBJ-ORIGINAL-TZID'][0]
-                # print self.cals[0]['timeZone']
-                # print dir(ve.dtstart.value.tzinfo)
-                # print vars(ve.dtstart.value.tzinfo)
+                    start = ve.dtstart.value.isoformat()
+                    end   = ve.dtend.value.isoformat()
 
-                event['start'] = { 'dateTime' : start,
-                                   'timeZone' : self.cals[0]['timeZone'] }
-                                   #'timeZone' : ve.dtstart.value.tzinfo._tzid }
-                event['end']   = { 'dateTime' : end,
-                                   'timeZone' : self.cals[0]['timeZone'] }
-                                   #'timeZone' : ve.dtend.value.tzinfo._tzid }
+                    # XXX
+                    # Timezone madness! Note that we're using the timezone for the
+                    # calendar being added to. This is OK if the event is in the
+                    # same timezone. This needs to be changed to use the timezone
+                    # from the DTSTART and DTEND values. Problem is, for example,
+                    # the TZID might be "Pacific Standard Time" and Google expects
+                    # a timezone string like "America/Los_Angeles". Need to find
+                    # a way in python to convert to the more specific timezone
+                    # string.
+                    # XXX
+                    # print ve.dtstart.params['X-VOBJ-ORIGINAL-TZID'][0]
+                    # print self.cals[0]['timeZone']
+                    # print dir(ve.dtstart.value.tzinfo)
+                    # print vars(ve.dtstart.value.tzinfo)
 
-            if hasattr(ve, 'rrule'):
-                DebugPrint("RRULE: %s\n" % ve.rrule.value)
-                event['recurrence'] = [ "RRULE:" + ve.rrule.value ]
+                    event['start'] = { 'dateTime' : start,
+                                       'timeZone' : self.cals[0]['timeZone'] }
+                                       #'timeZone' : ve.dtstart.value.tzinfo._tzid }
+                    event['end']   = { 'dateTime' : end,
+                                       'timeZone' : self.cals[0]['timeZone'] }
+                                       #'timeZone' : ve.dtend.value.tzinfo._tzid }
+
+                if hasattr(ve, 'rrule'):
+                    DebugPrint("RRULE: %s\n" % ve.rrule.value)
+                    event['recurrence'] = [ "RRULE:" + ve.rrule.value ]
 
             if hasattr(ve, 'description') and ve.description.value.strip():
                 descr = ve.description.value.strip()
