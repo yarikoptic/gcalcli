@@ -1,14 +1,21 @@
 gcalcli (2.4.2-1) unstable; urgency=low
 
+  [ Unit 193 ]
   * New upstream release (Closes: #707701)
+    - patches up_pep0394_not_yet_there and up_unicode_support
+      are no longer needed
   * Updated watch file
   * Use dh9
   * Boosted policy compliance to 3.9.4
   * Updated a debian/copyright file
   * Added basic docs
-  * Added new recommends
+  * Added new Recommends: python-parsedatetime, python-simplejson,
+    python-vobject
 
- -- Unit 193 <unit193@ubuntu.com>  Wed, 26 Jun 2013 16:26:12 -0400
+  [ Yaroslav Halchenko ]
+  * Generate manpage using help2man
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Thu, 27 Jun 2013 12:33:39 -0400
 
 gcalcli (2.1-2) unstable; urgency=low
 

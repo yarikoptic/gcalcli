@@ -4,9 +4,17 @@
 %:
 	dh $@
 
-override_dh_install:
+override_dh_clean:
+	dh_clean
+	rm -f gcalcli.1
+
+override_dh_install: gcalcli.1
 	dh_install gcalcli usr/bin
-	dh_installman debian/gcalcli.1
+	dh_installman gcalcli.1
 
 override_dh_installchangelogs:
 	dh_installchangelogs ChangeLog
+
+gcalcli.1:
+	help2man --section=1 --no-info --include=debian/gcalcli.h2m ./gcalcli >| $@
+	sed -i -e '/Usage:/,/Options:/d' -e 's/^OPTIONS/.SH OPTIONS/' gcalcli.1
