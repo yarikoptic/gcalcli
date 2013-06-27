@@ -2,16 +2,16 @@ Source: gcalcli
 Section: utils
 Priority: extra
 Maintainer: Yaroslav Halchenko <debian@onerussian.com>
-Homepage: http://code.google.com/p/gcalcli/
+Homepage: https://github.com/insanum/gcalcli
 Vcs-git: git://git.onerussian.com/deb/gcalcli
 Vcs-Browser: http://git.onerussian.com/?p=deb/gcalcli.git
-Build-Depends: debhelper (>= 7.0.50~)
-Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.4
 
 Package: gcalcli
 Architecture: all
 Depends: python, python-gdata (>= 1.0.7), python-dateutil, ${misc:Depends}
-Recommends: gxmessage
+Recommends: gxmessage, python-parsedatetime, python-simplejson, python-vobject
 Description: Google Calendar Command Line Interface
  gcalcli is a Python application that allows you to access your Google
  Calendar from a command line. It's easy to get your agenda, search for

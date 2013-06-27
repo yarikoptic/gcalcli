@@ -10,7 +10,7 @@ Subject: [PATCH] ENH: Making sorting of calendars error resistant by placing
 
 --- a/gcalcli
 +++ b/gcalcli
-@@ -355,9 +355,15 @@ class gcalcli:
+@@ -525,9 +525,15 @@ class gcalcli:
                    self.ACCESS_READ        : 8,
                    self.ACCESS_NONE        : 9 }
  

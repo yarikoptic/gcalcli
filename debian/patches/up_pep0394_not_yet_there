@@ -1,8 +1,0 @@
---- a/gcalcli
-+++ b/gcalcli
-@@ -1,4 +1,4 @@
--#!/usr/bin/python2
-+#!/usr/bin/python
- 
- # ** The MIT License **
- #

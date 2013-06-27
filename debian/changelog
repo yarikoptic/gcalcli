@@ -1,3 +1,15 @@
+gcalcli (2.4.2-1) unstable; urgency=low
+
+  * New upstream release (Closes: #707701)
+  * Updated watch file
+  * Use dh9
+  * Boosted policy compliance to 3.9.4
+  * Updated a debian/copyright file
+  * Added basic docs
+  * Added new recommends
+
+ -- Unit 193 <unit193@ubuntu.com>  Wed, 26 Jun 2013 16:26:12 -0400
+
 gcalcli (2.1-2) unstable; urgency=low
 
   * Refactored remaining Debian upstream-intended changes into 2 patches:
