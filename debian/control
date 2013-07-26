@@ -5,7 +5,10 @@ Maintainer: Yaroslav Halchenko <debian@onerussian.com>
 Homepage: https://github.com/insanum/gcalcli
 Vcs-git: git://git.onerussian.com/deb/gcalcli
 Vcs-Browser: http://git.onerussian.com/?p=deb/gcalcli.git
-Build-Depends: debhelper (>= 9), help2man
+Build-Depends: debhelper (>= 9),
+               help2man,
+               python-gdata (>= 1.0.7),
+               python-dateutil,
 Standards-Version: 3.9.4
 
 Package: gcalcli

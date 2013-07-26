@@ -1,3 +1,11 @@
+gcalcli (2.4.2-2) unstable; urgency=high
+
+  * Added python-gdata and python-dateutil to Build-Depends to proper
+    functioning of help2man thus preventing FTBFS (Closes: #714550).
+    Thanks Felix Geyer for the report.
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Fri, 26 Jul 2013 13:06:23 -0400
+
 gcalcli (2.4.2-1) unstable; urgency=low
 
   [ Unit 193 ]
