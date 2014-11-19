@@ -1,3 +1,9 @@
+gcalcli (3.1~git20141131.7c37de0-1) UNRELEASED; urgency=medium
+
+  * d/control: Depend on python-gflags and python-googleapi, drop python-gdata.
+
+ -- Unit 193 <unit193@ubuntu.com>  Wed, 19 Nov 2014 00:19:15 -0500
+
 gcalcli (2.4.2-2) unstable; urgency=high
 
   * Added python-gdata and python-dateutil to Build-Depends to proper
