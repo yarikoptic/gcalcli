@@ -3,8 +3,8 @@ Section: utils
 Priority: extra
 Maintainer: Yaroslav Halchenko <debian@onerussian.com>
 Homepage: https://github.com/insanum/gcalcli
-Vcs-git: git://git.onerussian.com/deb/gcalcli
-Vcs-Browser: http://git.onerussian.com/?p=deb/gcalcli.git
+Vcs-git: git://github.com/yarikoptic/gcalcli.git
+Vcs-Browser: https://github.com/yarikoptic/gcalcli.git
 Build-Depends: debhelper (>= 9),
                help2man,
                python-dateutil,

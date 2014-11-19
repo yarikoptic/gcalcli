@@ -1,6 +1,7 @@
 gcalcli (3.1~git20141131.7c37de0-1) UNRELEASED; urgency=medium
 
   * d/control: Depend on python-gflags and python-googleapi, drop python-gdata.
+  * d/control: Update vcs-* fields.
   * d/rules: Clean gcalcli.egg-info/ too.
 
  -- Unit 193 <unit193@ubuntu.com>  Wed, 19 Nov 2014 00:19:15 -0500
