@@ -4,7 +4,7 @@ Include file for help2man man page
 gcalcli \- Google Calendar Command Line Interface
 
 [synopsis]
-gcalcli [options] command [command args]
+gcalcli [options] command [command args or options]
 
 [description]
 gcalcli is a Python application that allows you to access your Google

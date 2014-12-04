@@ -18,4 +18,4 @@ override_dh_installchangelogs:
 
 gcalcli.1:
 	help2man --section=1 --no-info --include=debian/gcalcli.h2m ./gcalcli >| $@
-	sed -i -e '/Usage:/,/Options:/d' -e 's/^OPTIONS/.SH OPTIONS/' gcalcli.1
+	sed -i -e '/Usage:/,/.\/gcalcli /d' -e 's/Commands:/.SH COMMANDS/' -e 's@./gcalcli:@OPTIONS@' gcalcli.1
