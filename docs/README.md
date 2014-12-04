@@ -5,43 +5,64 @@ gcalcli
 
 gcalcli is a Python application that allows you to access your Google
 Calendar(s) from a command line. It's easy to get your agenda, search for
-events, quickly add new events, and even import those annoying vCal invites
-from Microsoft Exchange. Additionally, gcalcli can be used as a reminder
-service to execute any application you want.
+events, add new events, delete events, edit events, and even import those
+annoying ICS/vCal invites from Microsoft Exchange and/or other sources.
+Additionally, gcalcli can be used as a reminder service and execute any
+application you want when an event is coming up.
 
-Check your OS Distribution for packages.
+gcalcli uses the [Google Calendar API version 3](https://developers.google.com/google-apps/calendar/).
+
+Installation
+------------
+
+Check your OS distribution for packages.
+
+### Install from source
+
+```sh
+git clone https://github.com/insanum/gcalcli.git
+cd gcalcli
+python setup.py install
+# BELOW IS OPTIONAL BUT ENABLES SOME ADDITIONAL FUNCTIONALITY
+pip install vobject parsedatetime
+```
 
 Requirements
 ------------
 
- * [Python 2](http://www.python.org)
- * Google's [GData](http://code.google.com/p/gdata-python-client) Python module
- * [dateutil](http://www.labix.org/python-dateutil) Python module
- * A love for the command line!
+* [Python 2](http://www.python.org)
+* [Google API Client](https://developers.google.com/api-client-library/python) Python 2 module
+* [dateutil](http://www.labix.org/python-dateutil) Python 2 module
+* [gflags](https://code.google.com/p/python-gflags/) Python 2 module
+* A love for the command line!
 
 ### Optional packages
- * [vobject](http://vobject.skyhouseconsulting.com) Python module
-     Used for ics/vcal importing.
- * [simplejson](http://github.com/simplejson/simplejson) Python module
-     Used for URL shortening. We'll fallback to the stdlib json module if it's
-     not available.
- * [parsedatetime](http://github.com/bear/parsedatetime) Python module
-     Used for fuzzy dates/times like "now", "today", "eod tomorrow", etc.
+* [vobject](http://vobject.skyhouseconsulting.com) Python module
+
+    Used for ics/vcal importing.
+
+* [parsedatetime](http://github.com/bear/parsedatetime) Python module
+
+    Used for fuzzy dates/times like "now", "today", "eod tomorrow", etc.
 
 Features
 --------
 
+ * OAuth2 authention with your Google account
  * list your calendars
  * show an agenda using a specified start/end date and time
  * ascii text graphical calendar display with variable width
- * search for past and/or future calendar events
+ * search for past and/or future events
  * "quick add" new events to a specified calendar
  * "add" a new event to a specified calendar (interactively or automatically)
- * import events from ICS/VCAL files to a specified calendar
+ * "delete" event(s) from a calendar(s) (interactively or automatically)
+ * "edit" event(s) interactively
+ * import events from ICS/vCal files to a specified calendar
+ * support for URL shortening via goo.gl
  * easy integration with your favorite mail client (attachment handler)
  * run as a cron job and execute a command for reminders
- * work against specific calendars (by calendar type or calendar name regex)
- * config file support for specifying option defaults
+ * work against specific calendars (by calendar name w/ regex)
+ * flag file support for specifying option defaults
  * colored output and unicode character support
  * super fun hacking with shell scripts, cron, screen, tmux, conky, etc
 
@@ -68,46 +89,39 @@ gcalcli [options] command [command args]
 
   --version                version information
 
-  --config <file>          config file to read (default is '~/.gcalclirc')
+  --configFolder <folder>  Folder where specific configuration information is
+                           stored.  This includes a gcalclirc flags file, oauth
+                           credentials, and specific cache.
+  --[no]includerc          Whether the ~/.gcalclirc should be used in addition
+                           to the one in the config folder
 
-  --user <username>        google username
-
-  --pw <password>          password
-
-  --cals [all,             'calendars' to work with (default is all calendars)
-          default,         - default (your default main calendar)
-          owner,           - owner (your owned calendars)
-          editor,          - editor (editable calendar)
-          contributor,     - contributor (non-owner but able to edit)
-          read,            - read (read only calendars)
-          freebusy]        - freebusy (only free/busy info visible)
-
-  --cal <name>[#color]     'calendar' to work with (default is all calendars)
+  --calendar <name>[#color]
+                           'calendar' to work with (default is all calendars)
                            - you can specify a calendar by name or by substring
                              which can match multiple calendars
-                           - you can use multiple '--cal' arguments on the
-                             command line
-                           - in the config file specify multiple calendars in
-                             quotes separated by commas as:
-                               cal: "foo", "bar", "my cal"
+                           - you can use multiple '--calendar' arguments on the
+                             command line for the query commands
                            - an optional color override can be specified per
                              calendar using the ending hashtag:
-                               --cal "Eric Davis"#green --cal foo#red
-                             or via the config file:
-                               cal: "foo"#red, "bar"#yellow, "my cal"#green
+                               --calendar "Eric Davis"#green --calendar foo#red
 
-  --24hr                   show all dates in 24 hour format
+  --[no]military           show all dates in 24 hour format (default = False)
 
-  --detail-all             show event details in the 'agenda' output
-  --detail-location        - the description width defaults to 80 characters
-  --detail-length          - if 'short' is specified for the url then the event
-  --detail-reminders         link is shortened using http://goo.gl (slow!)
-  --detail-descr
-  --detail-descr-width
-  --detail-url [short,
+  --details [all, calendar, location, length, reminders, description, url, longurl, shorturl]
+                           This has the same effect as the individual switches
+                           - you can specify this multiple times, to get just
+                             the combination of details you want.
+
+  --[no]detail_all           show event details in the 'agenda' output
+  --[no]detail_location      - the description width defaults to 80 characters
+  --[no]detail_length        - if 'short' is specified for the url then the
+  --[no]detail_reminders       event link is shortened using http://goo.gl
+  --[no]detail_description   - the --detail-url can be used for both the 'quick'
+  --detail_url [short,         and 'add' commands as well
                 long]
+  --detail_description_width
 
-  --ignore-started         ignore old or already started events
+  --[no]started           Show already started events (default = True)
                            - when used with the 'agenda' command, ignore events
                              that have already started and are in-progress with
                              respect to the specified [start] time
@@ -118,48 +132,60 @@ gcalcli [options] command [command args]
   --width                  the number of characters to use for each column in
                            the 'calw' and 'calm' command outputs (default is 10)
 
-  --mon                    week begins with Monday for 'calw' and 'calm' command
-                           outputs (default is Sunday)
+  --[no]monday             week begins with Monday for 'calw' and 'calm' command
+                           outputs (default is False meaning Sunday)
 
-  --nc                     don't use colors
+  --[no]colors             Use colors (defalt = True)
 
-  --conky                  use conky color escapes sequences instead of ansi
+  --[no]lineart            Use line graphics (default = True)
+
+  --[no]conky              use conky color escapes sequences instead of ansi
                            terminal color escape sequences (requires using
-                           the 'execpi' command in your conkyrc)
+                           the 'execpi' command in conkyrc) (default = False)
 
-  --cal-owner-color        specify the colors used for the calendars and dates
-  --cal-editor-color       each of these argument requires a <color> argument
-  --cal-contributor-color  which must be one of [ default, black, brightblack,
-  --cal-read-color         red, brightred, green, brightgreen, yellow,
-  --cal-freebusy-color     brightyellow, blue, brightblue, magenta,
-  --date-color             brightmagenta, cyan, brightcyan, white,
-  --border-color           brightwhite ]
+  --color_owner            specify the colors used for the calendars and dates
+  --color_writer           each of these argument requires a <color> argument
+  --color_reader           which must be one of [ default, black, brightblack,
+  --color_freebusy             red, brightred, green, brightgreen, yellow,
+  --color_date                 brightyellow, blue, brightblue, magenta,
+  --color_now_marker           brightmagenta, cyan, brightcyan, white,
+  --color_border               brightwhite ]
 
-  --tsv                    tab-separated output for 'agenda'. Format is:
-                           'start date' 'start time' 'end date' 'end time' 'title' 'location' 'description'
+  --[no]tsv                tab-separated output for 'agenda'. Format is:
+                           start date, start time, end date, end time, link, title, location, description
+                           (default = False)
 
   --locale <locale>        set a custom locale (i.e. 'de_DE.UTF-8'). Check the
                            supported locales of your system first.
 
   --reminder <mins>        number of minutes to use when setting reminders for
-                           the 'quick' and 'add' commands; if not specified,
-                           Google code's default behavior occurs: no reminder is
-                           set (documented, incorrectly, otherwise: as using the
-                           default for the calendar, but this does not actually
-                           happen)
+                           the 'quick' and 'add' commands; if not specified
+                           the calendar's default reminder settings are used
 
-   --title <title>         event details used by the 'add' command
-   --where <location>      - the duration is specified in minutes
-   --when <datetime>       - make sure to quote strings with spaces
-   --duration <#>          - the datetime format is 'MM/DD/YYYY HH:MM'
-   --descr <description>   - the '--reminder' option can be specified as well
+  --title <title>          event details used by the 'add' command
+  --where <location>       - the duration is specified in minutes
+  --when <datetime>        - make sure to quote strings with spaces
+  --duration <#>           - datetime examples see 'agenda' below
+  --description <descr>
+  --[no]prompt             Whether we should prompt for any missing pieces of
+                           data when doing an add. (Default = True)
+
+  --[no]refresh            Force a refresh of cached data (Default = False)
+
+  --[no]cache              Use cached data (Default = True)
+
+  --[no]verbose            Output data on each event when importing from an ics
+                           file
 
  Commands:
 
   list                     list all calendars
 
   search <text>            search for events
-                           - only matches whole words
+                           - case insensitive search terms to find events that
+                             match these terms in any field, like traditional
+                             Google search with quotes, exclusion, etc.
+                           - for example to get just games: "soccer -practice"
 
   agenda [start] [end]     get an agenda for a time period
                            - start time default is 12am today
@@ -185,33 +211,49 @@ gcalcli [options] command [command args]
                              and only one month will be displayed
 
   quick <text>             quick add an event to a calendar
-                           - if a --cal is not specified then the event is
-                             added to the default calendar
-                           - example:
+                           - a single --calendar must specified
+                           - the "--details url" option will show the event link
+                           - example text:
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
 
   add                      add a detailed event to a calendar
-                           - if a --cal is not specified then the event is
-                             added to the default calendar
+                           - a single --calendar must specified
+                           - the "--details url" option will show the event link
                            - example:
-                              gcalcli --title 'Analysis of Algorithms Final'
+                              gcalcli --calendar 'Eric Davis'
+                                      --title 'Analysis of Algorithms Final'
                                       --where UCI
                                       --when '12/14/2012 10:00'
                                       --duration 60
-                                      --descr 'It is going to be hard!'
+                                      --description 'It is going to be hard!'
                                       --reminder 30
                                       add
 
-  import [-v] [file]       import an ics/vcal file to a calendar
-                           - if a --cal is not specified then the event is
-                             added to the default calendar
+  delete <text>            delete event(s)
+                           - case insensitive search terms to find and delete
+                             events, just like the 'search' command
+                           - deleting is interactive
+                             use the --iamaexpert option to auto delete
+                             THINK YOU'RE AN EXPERT? USE AT YOUR OWN RISK!!!
+                           - use the --details options to show event details
+
+  edit <text>              edit event(s)
+                           - case insensitive search terms to find and edit
+                             events, just like the 'search' command
+                           - editing is interactive
+
+  import [-v|-d] [file]    import an ics/vcal file to a calendar
+                           - a single --calendar must specified
                            - if a file is not specified then the data is read
                              from standard input
                            - if -v is given then each event in the file is
                              displayed and you're given the option to import
                              or skip it, by default everything is imported
                              quietly without any interaction
+                           - if -d is given then each event in the file is
+                             displayed and not imported, a --calendar does
+                             not need to be specified for this option
 
   remind <mins> <command>  execute command if event occurs within <mins>
                            minutes time ('%s' in <command> is replaced with
@@ -223,18 +265,9 @@ gcalcli [options] command [command args]
 
 #### Login Information
 
-You can provide gcalcli with your Google Calendar login information via one of
-the following:
-
- * on the command line using the --user and --pw options
- * the config file
- * or interactively when prompted
-
-In any case make sure you protect the information. It is highly recommended
-you turn on
-[Google's 2-Step Verification](http://support.google.com/accounts/bin/topic.py?hl=en&topic=28786)
-and use different application specific passwords for each system you're using
-gcalcli on.
+OAuth2 is used for authenticating with your Google account. The resulting token
+is placed in the ~/.gcalcli_oauth file. When you first start gcalcli the
+authentication process will proceed. Simply follow the instructions.
 
 #### HTTP Proxy Support
 
@@ -250,57 +283,18 @@ proxy-password or proxy_password
 
 Note that these environment variables must be lowercase.
 
-#### Config File
+#### Flag File
 
-gcalcli is able to read default configuration information from a config file.
-This file is location, by default, at '~/.gcalclirc' and must be formatted as
-follows:
+gcalcli is able to read default configuration information from a flag file.
+This file is located, by default, at '~/.gcalclirc'.  The flag file takes one
+command line parameter per line.
 
-```
-[gcalcli]
-<config-option>: <value>
-<config-option>: <value>
-...
-```
+#### Configuration Folders
 
-The available config items are the same as those that can be specified on the
-command line.  Note that any value specified on the command line overrides the
-config file.
-
-```
-user: <username>
-pw: <password>
-cals: <type>
-cal: <name>[#color], <name>[#color], ...
-24hr: <true|false>
-detail-all: <true|false>
-detail-location: <true|false>
-detail-length: <true|false>
-detail-reminders: <true|false>
-detail-descr: <true|false>
-detail-descr-width: <width>
-ignore-started: <true|false>
-width: <width>
-mon: <true|false>
-nd: <true|false>
-cal-owner-color: <color>
-cal-editor-color: <color>
-cal-contributor-color: <color>
-cal-read-color: <color>
-cal-freebusy-color: <color>
-date-color: <color>
-border-color: <color>
-locale: <locale>
-reminder: <mins>
-```
-
-Note that you can specify a shell command and the output will be the value for
-the config variable. A shell command is determined if the first character is a
-backtick (i.e. '`'). An example is pulling a password from gpg:
-
-```
-pw: `gpg --decrypt ~/mypw.gpg`
-```
+gcalcli is able to store all its necessary information in a specific folder (use
+the --configFolder option.) Each folder will contain 2 files: oauth and cache.
+An optional 3rd file, gcalclirc, can be present for specific flags that you only
+want to apply when using this configuration folder.
 
 #### Importing VCS/VCAL/ICS Files from Exchange (or other)
 
@@ -316,7 +310,9 @@ TERMINAL=evilvte
 CONFIG=~/.gcalclirc
 
 $TERMINAL -e bash -c "echo 'Importing invite...' ; \
-                      gcalcli --config=$CONFIG import -v \"$1\" ; \
+                      gcalcli --detail-url=short \
+                              --calendar='Eric Davis' \
+                              import -v \"$1\" ; \
                       read -p 'press enter to exit: '"
 ```
 
@@ -347,9 +343,9 @@ in via X:
 
 [[ -x /usr/bin/dunst ]] && /usr/bin/dunst -config ~/.dunstrc &
 
-if [ -x /usr/bin/gcalcli ]; then 
+if [ -x /usr/bin/gcalcli ]; then
   while true; do
-    /usr/bin/gcalcli --config=~/.gcalclirc --cal="davis" remind
+    /usr/bin/gcalcli --calendar="davis" remind
     sleep 300
   done &
 fi
@@ -377,7 +373,7 @@ ${execpi 300 gcalcli --conky agenda}
 To also get a graphical calendar that shows the next three weeks add:
 
 ```
-${execpi 300 gcalcli --conky --cals=owner calw 3}
+${execpi 300 gcalcli --conky calw 3}
 ```
 
 #### Agenda Integration With tmux
@@ -402,7 +398,7 @@ that will dump you agenda to a text file:
 Then add the following line:
 
 ```
-*/5 * * * * gcalcli --nc --ignore-started agenda "`date`" > /tmp/gcalcli_agenda.txt
+*/5 * * * * gcalcli --nocolor --nostarted agenda "`date`" > /tmp/gcalcli_agenda.txt
 ```
 
 Next create a simple shell script that will extract the first agenda line.
@@ -421,4 +417,3 @@ is!):
 backtick 1 60 60 screen_agenda
 hardstatus "[ %1` ]"
 ```
-
