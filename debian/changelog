@@ -1,7 +1,12 @@
 gcalcli (3.1~git20141131.7c37de0-1) UNRELEASED; urgency=medium
 
+  * New git snapshot. (Closes: #770133)
+    - Drop patches.
   * d/control: Depend on python-gflags and python-googleapi, drop python-gdata.
+  * d/control: Build-dep on python-setuptools.
+  * d/control: Set X-Python-Version to >= 2.6
   * d/control: Update vcs-* fields.
+  * d/rules, d/gcalcli.h2m: Update for new --help output.
   * d/rules: Clean gcalcli.egg-info/ too.
   * Updated Standards Version to 3.9.6.
 
