@@ -1,16 +1,21 @@
-gcalcli (3.1~git20141131.7c37de0-1) UNRELEASED; urgency=medium
+gcalcli (3.1-1) experimental; urgency=medium
 
+  [ Unit 193 ]
   * New git snapshot. (Closes: #770133)
     - Drop patches.
-  * d/control: Depend on python-gflags and python-googleapi, drop python-gdata.
-  * d/control: Build-dep on python-setuptools.
-  * d/control: Set X-Python-Version to >= 2.6
-  * d/control: Update vcs-* fields.
+  * d/control
+    - Depend on python-gflags and python-googleapi, drop python-gdata.
+    - Build-dep on python-setuptools.
+    - Set X-Python-Version to >= 2.6
+    - Update vcs-* fields to point to yarikoptic's github
+	- Updated Standards Version to 3.9.6.
   * d/rules, d/gcalcli.h2m: Update for new --help output.
   * d/rules: Clean gcalcli.egg-info/ too.
-  * Updated Standards Version to 3.9.6.
 
- -- Unit 193 <unit193@ubuntu.com>  Wed, 19 Nov 2014 00:19:15 -0500
+  [ Yaroslav Halchenko ]
+  * New upstream release
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Thu, 04 Dec 2014 20:38:43 -0500
 
 gcalcli (2.4.2-2) unstable; urgency=high
 
