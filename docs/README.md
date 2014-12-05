@@ -289,6 +289,20 @@ gcalcli is able to read default configuration information from a flag file.
 This file is located, by default, at '~/.gcalclirc'.  The flag file takes one
 command line parameter per line.
 
+Example:
+
+```
+--military
+--duration=55
+--details=calendar
+--details=location
+--details=length
+-w 10
+```
+
+Note that long options require an equal sign if specifying a parameter.  With
+short options the equal sign is optional.
+
 #### Configuration Folders
 
 gcalcli is able to store all its necessary information in a specific folder (use
@@ -375,6 +389,9 @@ To also get a graphical calendar that shows the next three weeks add:
 ```
 ${execpi 300 gcalcli --conky calw 3}
 ```
+
+You may need to increase the `text_buffer_size` in your conkyrc file.  Users
+have reported that the default of 256 bytes is too small for busy calendars.
 
 #### Agenda Integration With tmux
 
