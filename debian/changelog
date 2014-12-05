@@ -8,14 +8,17 @@ gcalcli (3.1-1) experimental; urgency=medium
     - Build-dep on python-setuptools.
     - Set X-Python-Version to >= 2.6
     - Update vcs-* fields to point to yarikoptic's github
-	- Updated Standards Version to 3.9.6.
+    - Updated Standards Version to 3.9.6.
   * d/rules, d/gcalcli.h2m: Update for new --help output.
   * d/rules: Clean gcalcli.egg-info/ too.
 
   [ Yaroslav Halchenko ]
   * New upstream release
+  * debian/control
+    - version dependencies for googleapi and gflags as to minimal known
+      to work
 
- -- Yaroslav Halchenko <debian@onerussian.com>  Thu, 04 Dec 2014 20:38:43 -0500
+ -- Yaroslav Halchenko <debian@onerussian.com>  Thu, 04 Dec 2014 21:05:34 -0500
 
 gcalcli (2.4.2-2) unstable; urgency=high
 
