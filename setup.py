@@ -6,12 +6,14 @@ except ImportError:
 
 try:
     import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst', 'md')
+    long_description = pypandoc.convert('README.md', 'rst',
+                                        format='markdown_github',
+                                        extra_args=("--no-wrap",))
 except:
     long_description = ''
 
 setup(name='gcalcli',
-      version='3.2',
+      version='3.3',
       maintainer='Eric Davis, Brian Hartvigsen',
       maintainer_email='edavis@insanum.com, brian.andrew@brianandjenny.com',
       description='Google Calendar Command Line Interface',
