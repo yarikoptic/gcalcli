@@ -1,3 +1,9 @@
+gcalcli (3.3-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Unit 193 <unit193@ubuntu.com>  Fri, 19 Jun 2015 05:50:36 -0400
+
 gcalcli (3.2-2) unstable; urgency=medium
 
   * upload to unstable
