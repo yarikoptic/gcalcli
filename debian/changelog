@@ -1,3 +1,10 @@
+gcalcli (3.3.2-1) unstable; urgency=medium
+
+  * New upstream release.
+  * d/control: Add myself to uploaders.
+
+ -- Unit 193 <unit193@ubuntu.com>  Fri, 18 Sep 2015 17:09:49 -0400
+
 gcalcli (3.3-1) unstable; urgency=medium
 
   * New upstream release.
