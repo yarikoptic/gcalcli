@@ -1,3 +1,10 @@
+gcalcli (3.3.2-2) unstable; urgency=medium
+
+  * d/p/oauth2client2_compatibility.patch (Closes: #826013):
+    - Fix incompatibilities with python-oauth2client >= 2.x
+
+ -- Unit 193 <unit193@ubuntu.com>  Thu, 16 Jun 2016 17:29:19 -0400
+
 gcalcli (3.3.2-1) unstable; urgency=medium
 
   * New upstream release.
