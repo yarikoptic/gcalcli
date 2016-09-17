@@ -4,7 +4,7 @@ Priority: extra
 Maintainer: Yaroslav Halchenko <debian@onerussian.com>
 Uploaders: Unit 193 <unit193@ubuntu.com>
 Homepage: https://github.com/insanum/gcalcli
-Vcs-git: git://github.com/yarikoptic/gcalcli
+Vcs-git: https://github.com/yarikoptic/gcalcli
 Vcs-Browser: https://github.com/yarikoptic/gcalcli
 Build-Depends: debhelper (>= 9),
                help2man,
