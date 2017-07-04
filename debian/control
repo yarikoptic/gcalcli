@@ -7,16 +7,18 @@ Homepage: https://github.com/insanum/gcalcli
 Vcs-git: https://github.com/yarikoptic/gcalcli
 Vcs-Browser: https://github.com/yarikoptic/gcalcli
 Build-Depends: debhelper (>= 9),
-               help2man,
-               python3-dateutil,
-               python3-googleapi (>= 1.2),
-               python3-setuptools
+ help2man,
+ python3-dateutil,
+ python3-googleapi (>= 1.2),
+ python3-setuptools
 Standards-Version: 3.9.8
 X-Python-Version: >= 2.6
 
 Package: gcalcli
 Architecture: all
-Depends: ${python3:Depends}, python3-dateutil, python3-googleapi, ${misc:Depends}
+Depends: ${misc:Depends}, ${python3:Depends},
+ python3-dateutil,
+ python3-googleapi,
 Recommends: python3-parsedatetime, python3-vobject
 Description: Google Calendar Command Line Interface
  gcalcli is a Python application that allows you to access your Google
