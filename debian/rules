@@ -17,5 +17,5 @@ override_dh_installchangelogs:
 	dh_installchangelogs ChangeLog
 
 gcalcli.1:
-	help2man --section=1 --no-info --include=debian/gcalcli.h2m ./gcalcli >| $@
+	help2man --section=1 --no-info --include=debian/gcalcli.h2m debian/gcalcli/usr/bin/gcalcli >| $@
 	sed -i -e '/Usage:/,/.\/gcalcli /d' -e 's/Commands:/.SH COMMANDS/' -e 's@./gcalcli:@OPTIONS@' gcalcli.1
