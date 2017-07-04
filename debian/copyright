@@ -28,7 +28,7 @@ License: Expat
 Files: debian/*
 Copyright: 2007, Brandon Philips <brandon@ifup.org>
            2009-2015, Yaroslav Halchenko <debian@onerussian.com>
-           2014-2015, Unit 193 <unit193@ubuntu.com>
+           2014-2017, Unit 193 <unit193@ubuntu.com>
 License: GPL-3+
  This program is free software; you can redistribute it and/or modify it under
  the terms of the GNU General Public License as published by the Free Software
