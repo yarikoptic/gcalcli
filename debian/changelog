@@ -1,3 +1,27 @@
+gcalcli (4.0.0~alpha3-1) UNRELEASED; urgency=medium
+
+  * New upstream alpha release.
+    - Drop patch.
+  * Run wrap-and-sort -s.
+  * Update Standards-Version to 4.0.0.
+  * d/control:
+    - Drop (build-)depend on python-gflags.
+    - Drop recommends on gxmessage and python-simplejson.
+    - Replace python dep with ${python3:Depends}.
+    - Swap all depends and build-depends for python3 counterparts.
+    - (Build-)depend on python3-httplib2 and python3-six.
+    - Build-depend on dh-python and python3-all.
+    - Set minimum python3 version to 3.2.
+  * d/copyright:
+    - MIT → Expat.
+    - Update years.
+  * d/rules:
+    - Use the buildsystem pybuild and call with python3.
+    - Adjust the help2man call to use the installed gcalcli.
+    - Drop override to manually install gcalcli.
+
+ -- Unit 193 <unit193@ubuntu.com>  Tue, 04 Jul 2017 18:58:35 -0400
+
 gcalcli (3.4.0-1) unstable; urgency=medium
 
   * New upstream release.
@@ -5,7 +29,7 @@ gcalcli (3.4.0-1) unstable; urgency=medium
   * d/control: Change Vcs-git to use an https URL.
   * Bump Standards-Version to 3.9.8.
 
- -- Unit 193 <unit193@ubuntu.com>  Sat, 17 Sep 2016 15:33:27 -0400
+ -- Unit 193 <unit193@ubuntu.com>  Sat, 17 Sep 2016 11:31:26 -0400
 
 gcalcli (3.3.2-2) unstable; urgency=medium
 
