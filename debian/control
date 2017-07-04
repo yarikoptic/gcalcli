@@ -10,7 +10,9 @@ Build-Depends: debhelper (>= 9),
  help2man,
  python3-dateutil,
  python3-googleapi (>= 1.2),
- python3-setuptools
+ python3-httplib2,
+ python3-setuptools,
+ python3-six
 Standards-Version: 3.9.8
 X-Python-Version: >= 2.6
 
@@ -19,6 +21,8 @@ Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends},
  python3-dateutil,
  python3-googleapi,
+ python3-httplib2,
+ python3-six
 Recommends: python3-parsedatetime, python3-vobject
 Description: Google Calendar Command Line Interface
  gcalcli is a Python application that allows you to access your Google
