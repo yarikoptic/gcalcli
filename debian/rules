@@ -9,8 +9,7 @@ override_dh_clean:
 	rm -f gcalcli.1
 	rm -rf gcalcli.egg-info/
 
-override_dh_install: gcalcli.1
-	dh_install gcalcli usr/bin
+override_dh_installman: gcalcli.1
 	dh_installman gcalcli.1
 
 override_dh_installchangelogs:
