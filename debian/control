@@ -7,7 +7,9 @@ Homepage: https://github.com/insanum/gcalcli
 Vcs-git: https://github.com/yarikoptic/gcalcli
 Vcs-Browser: https://github.com/yarikoptic/gcalcli
 Build-Depends: debhelper (>= 9),
+ dh-python,
  help2man,
+ python3-all,
  python3-dateutil,
  python3-googleapi (>= 1.2),
  python3-httplib2,
