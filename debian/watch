@@ -1,4 +1,4 @@
 version=3
-opts=filenamemangle=s/.+\/v?(.*)\.tar\.gz/gcalcli-$1.tar.gz/ \
-https://github.com/insanum/gcalcli/tags .*/v?(\d[\d\.]+)\.tar\.gz
+opts="uversionmangle=s/([ab])/~$1/g,filenamemangle=s/.+\/v?(.*)\.tar\.gz/gcalcli-$1.tar.gz/" \
+https://github.com/insanum/gcalcli/tags .*/v?(\d[\d\.ab]+)\.tar\.gz
 

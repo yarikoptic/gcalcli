@@ -1,5 +1,6 @@
-gcalcli (4.0.0~alpha3-1) UNRELEASED; urgency=medium
+gcalcli (4.0.0~a3-1) unstable; urgency=medium
 
+  [ Unit 193 ]
   * New upstream alpha release.
     - Drop patch.
   * Run wrap-and-sort -s.
@@ -20,7 +21,11 @@ gcalcli (4.0.0~alpha3-1) UNRELEASED; urgency=medium
     - Adjust the help2man call to use the installed gcalcli.
     - Drop override to manually install gcalcli.
 
- -- Unit 193 <unit193@ubuntu.com>  Tue, 04 Jul 2017 18:58:35 -0400
+  [ Yaroslav Halchenko ]
+  * d/watch
+    - Adjusted regex to allow for "a"lpha and "b"eta releases
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Thu, 06 Jul 2017 13:26:09 -0400
 
 gcalcli (3.4.0-1) unstable; urgency=medium
 
